@@ -1,0 +1,14 @@
+{
+  "user_id": "usr_001",
+  "generated_at": "2026-04-22T13:00:00Z",
+  "total_tasks": 10,
+  "queued_tasks": 1,
+  "running_tasks": 2,
+  "waiting_approval_tasks": 1,
+  "completed_tasks": 5,
+  "failed_tasks": 1,
+  "cancelled_tasks": 0,
+  "pending_approvals": 1,
+  "total_events": 43,
+  "active_sessions": 1
+}

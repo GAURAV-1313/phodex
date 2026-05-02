@@ -1,0 +1,4 @@
+services:
+  db:
+    image: arm64v8/postgres:16-alpine
+    platform: linux/arm64/v8

@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": "repo_1",
+      "user_id": "usr_001",
+      "device_id": "dev_1",
+      "name": "phodex",
+      "local_path": "/Users/gaurav/phodex",
+      "git_root": "/Users/gaurav/phodex",
+      "current_branch": "main",
+      "default_branch": "main",
+      "is_active": true,
+      "last_scanned_at": "2026-04-22T12:00:00Z",
+      "last_opened_at": "2026-04-22T11:55:00Z",
+      "metadata_json": {
+        "language": "dart"
+      },
+      "created_at": "2026-04-21T10:00:00Z",
+      "updated_at": "2026-04-22T12:00:00Z"
+    }
+  ]
+}
