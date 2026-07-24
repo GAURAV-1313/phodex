@@ -8,12 +8,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.models.task import Task
 from app.models.task_event import TaskEvent
 from app.schemas.tasks import TaskEventEnvelope
+from app.services.redis_service import RedisService
 
 
 class EventBus:
-    def __init__(self) -> None:
+    def __init__(self, redis: RedisService) -> None:
+        self._redis = redis
         self._subscribers: dict[UUID, set[asyncio.Queue[TaskEventEnvelope]]] = defaultdict(set)
         self._lock = asyncio.Lock()
+        self._listener: asyncio.Task[None] | None = None
+
+    async def start(self) -> None:
+        if self._redis.enabled:
+            self._listener = asyncio.create_task(self._redis.listen(self._deliver_serialized))
+
+    async def close(self) -> None:
+        if self._listener is not None:
+            self._listener.cancel()
+            try:
+                await self._listener
+            except asyncio.CancelledError:
+                pass
+            self._listener = None
 
     async def subscribe(self, task_id: UUID) -> asyncio.Queue[TaskEventEnvelope]:
         queue: asyncio.Queue[TaskEventEnvelope] = asyncio.Queue()
@@ -29,6 +45,16 @@ class EventBus:
                     self._subscribers.pop(task_id, None)
 
     async def publish(self, envelope: TaskEventEnvelope) -> None:
+        if self._redis.enabled:
+            # Every app instance receives this message through its one Redis listener.
+            if await self._redis.publish(envelope.model_dump_json()):
+                return
+        await self._deliver(envelope)
+
+    async def _deliver_serialized(self, payload: str) -> None:
+        await self._deliver(TaskEventEnvelope.model_validate_json(payload))
+
+    async def _deliver(self, envelope: TaskEventEnvelope) -> None:
         async with self._lock:
             subscribers = list(self._subscribers.get(envelope.task_id, set()))
 
@@ -45,6 +71,12 @@ class EventService:
         self._session_factory = session_factory
         self._event_bus = event_bus
         self._append_locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
+
+    async def start(self) -> None:
+        await self._event_bus.start()
+
+    async def close(self) -> None:
+        await self._event_bus.close()
 
     async def append_event(
         self,

@@ -7,11 +7,15 @@ class ApiConfig {
     required this.useNetwork,
     required this.baseUrl,
     required this.googleIdToken,
+    this.googleServerClientId = '',
+    this.googleIosClientId = '',
   });
 
   final bool useNetwork;
   final String baseUrl;
   final String googleIdToken;
+  final String googleServerClientId;
+  final String googleIosClientId;
 }
 
 class PhodexApiClient {
@@ -39,8 +43,20 @@ class PhodexApiClient {
       return Future.value(token);
     }
 
-    _loginFuture ??= _login();
+    _loginFuture ??= _login(config.googleIdToken);
     return _loginFuture!;
+  }
+
+  /// Exchanges a freshly issued Google ID token for an in-memory Phodex JWT.
+  Future<String> loginWithGoogleIdToken(String idToken) {
+    _accessToken = null;
+    _loginFuture = _login(idToken);
+    return _loginFuture!;
+  }
+
+  void clearSession() {
+    _accessToken = null;
+    _loginFuture = null;
   }
 
   Future<Map<String, dynamic>> getJson(String path) async {
@@ -84,11 +100,14 @@ class PhodexApiClient {
     return Options(headers: {'Authorization': 'Bearer $token'});
   }
 
-  Future<String> _login() async {
+  Future<String> _login(String idToken) async {
+    if (idToken.trim().isEmpty) {
+      throw StateError('Sign in with Google before calling the Phodex API.');
+    }
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/google',
-        data: {'id_token': config.googleIdToken},
+        data: {'id_token': idToken},
       );
       final token = response.data?['access_token'] as String?;
       if (token == null || token.isEmpty) {

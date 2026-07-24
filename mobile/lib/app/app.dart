@@ -13,7 +13,7 @@ class PhodexApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Phodex',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
+      theme: AppTheme.light(),
       routerConfig: router,
     );
   }

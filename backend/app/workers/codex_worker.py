@@ -268,7 +268,7 @@ class CodexWorkerEngine(WorkerEngine):
             if task is None:
                 raise RuntimeError("Task not found for execution context")
 
-            messages = (
+            messages = list(
                 (
                     await session.execute(
                         select(TaskMessage)
@@ -343,7 +343,8 @@ class CodexWorkerEngine(WorkerEngine):
 
         lines.append(
             "Return concise operational logs. Do not include private chain-of-thought. "
-            "If you edit files, include file-change summaries."
+            "If you edit files, include file-change summaries. End the final response with "
+            "exactly one outcome line: OUTCOME: COMPLETED, OUTCOME: BLOCKED, or OUTCOME: FAILED."
         )
         return "\n".join(lines)
 
@@ -488,6 +489,27 @@ class CodexWorkerEngine(WorkerEngine):
             return
 
         summary = state.final_summary or "Codex worker completed successfully."
+        if self._is_blocked_outcome(summary):
+            await self._task_service.transition_for_worker(
+                task_id,
+                TaskStatus.FAILED,
+                current_phase="runtime_blocked",
+                error_message=summary,
+                final_summary=summary,
+            )
+            await self._event_service.append_event(
+                task_id,
+                "task.failed",
+                {
+                    "message": "Codex runtime reported a blocked outcome",
+                    "error_code": "WORKER_BLOCKED",
+                    "summary": summary,
+                    "exit_code": exit_code,
+                    "is_retryable": True,
+                },
+            )
+            return
+
         await self._event_service.append_event(
             task_id,
             "task.completed",
@@ -584,6 +606,11 @@ class CodexWorkerEngine(WorkerEngine):
             if isinstance(value, str) and value.strip():
                 return value
         return None
+
+    @staticmethod
+    def _is_blocked_outcome(summary: str) -> bool:
+        normalized = summary.upper()
+        return "OUTCOME: BLOCKED" in normalized or "**BLOCKED**" in normalized
 
     def _extract_assistant_message(self, payload: dict) -> str | None:
         for key in ("assistant_message", "assistant", "final_answer", "output_text"):

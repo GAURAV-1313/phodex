@@ -13,6 +13,8 @@ async def app(tmp_path) -> AsyncIterator:
     db_file = tmp_path / f"test-{uuid.uuid4()}.db"
     settings = Settings(
         DATABASE_URL=f"sqlite+aiosqlite:///{db_file}",
+        REDIS_URL=None,
+        OTEL_EXPORTER_OTLP_ENDPOINT=None,
         AUTO_CREATE_SCHEMA=True,
         ALLOW_INSECURE_TEST_TOKENS=True,
         JWT_SECRET_KEY="test-secret",

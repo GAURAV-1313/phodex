@@ -3,87 +3,84 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/domain/models/models.dart';
 import 'package:mobile/features/repos/application/repos_controller.dart';
-import 'package:mobile/shared/widgets/template_kit.dart';
+import 'package:mobile/shared/theme/theme.dart';
+import 'package:mobile/shared/widgets/stitch_ui.dart';
 
 class ReposScreen extends ConsumerWidget {
   const ReposScreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final reposValue = ref.watch(repositoriesProvider);
-    final selectedContext = ref
+    final value = ref.watch(repositoriesProvider);
+    final selected = ref
         .watch(selectedProjectContextProvider)
         .asData
-        ?.value;
-    final selectedRepoId = selectedContext?.syncedRepositoryId;
-
-    return TemplateScaffold(
-      key: const Key('repos-screen'),
-      bottomSafeArea: true,
+        ?.value
+        ?.syncedRepositoryId;
+    return StitchScaffold(
+      active: StitchTab.repos,
       child: RefreshIndicator(
         onRefresh: () => ref.read(repositoriesProvider.notifier).refreshList(),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(25, 0, 25, 28),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 110),
           children: [
-            const TemplateStatusBar(),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Connected repositories',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 34,
-                      height: 41 / 34,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                TemplateIcon(
-                  icon: Icons.close_rounded,
-                  onTap: () => context.go('/home'),
-                ),
-              ],
+            StitchHeader(
+              title: 'Phodex',
+              onBell: () => context.push('/approvals'),
             ),
-            const SizedBox(height: 26),
-            const _SupportItem(
-              icon: Icons.sync_rounded,
-              title: 'Sync stays local',
-              body:
-                  'Repositories are metadata synced by your companion device. Pull to refresh after syncing.',
-            ),
-            const SizedBox(height: 20),
-            reposValue.when(
-              data: (repos) {
-                if (repos.isEmpty) {
-                  return const _EmptyRepos();
-                }
-                return Column(
-                  children: [
-                    for (final repo in repos)
-                      _RepositoryCard(
-                        repo: repo,
-                        selected: repo.id == selectedRepoId,
-                        onTap: () async {
-                          await ref
-                              .read(repositoriesProvider.notifier)
-                              .selectRepository(repoId: repo.id);
-                          if (context.mounted) {
-                            context.go('/home');
-                          }
-                        },
-                      ),
-                  ],
-                );
-              },
-              loading: () => const Padding(
-                padding: EdgeInsets.only(top: 96),
-                child: Center(child: CircularProgressIndicator()),
+            const SizedBox(height: 46),
+            const Text(
+              'Repositories',
+              style: TextStyle(
+                fontSize: 42,
+                letterSpacing: -1.5,
+                fontWeight: FontWeight.w700,
               ),
-              error: (error, _) => _ErrorBlock(
-                message: 'Could not load repositories: $error',
-                onRetry: () =>
-                    ref.read(repositoriesProvider.notifier).refreshList(),
+            ),
+            const SizedBox(height: 28),
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Search repositories…',
+                prefixIcon: const Icon(Icons.search),
+                fillColor: AppColors.bgInput,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            value.when(
+              data: (repos) => repos.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 100),
+                      child: Text(
+                        'No repositories are synced yet. Open Phodex on your desktop and sync a workspace.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 17,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        for (final repo in repos)
+                          _RepoCard(
+                            repo: repo,
+                            selected: repo.id == selected,
+                            onTap: () => context.push('/repos/${repo.id}'),
+                          ),
+                      ],
+                    ),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(100),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.only(top: 100),
+                child: Text('Could not load repositories: $error'),
               ),
             ),
           ],
@@ -93,160 +90,191 @@ class ReposScreen extends ConsumerWidget {
   }
 }
 
-class _SupportItem extends StatelessWidget {
-  const _SupportItem({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.black, size: 24),
-        const SizedBox(width: 25),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 17,
-                  height: 22 / 17,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                body,
-                style: const TextStyle(
-                  color: TemplateColors.labelSecondary,
-                  fontSize: 17,
-                  height: 22 / 17,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RepositoryCard extends StatelessWidget {
-  const _RepositoryCard({
+class _RepoCard extends StatelessWidget {
+  const _RepoCard({
     required this.repo,
     required this.selected,
     required this.onTap,
   });
-
   final SyncedRepository repo;
   final bool selected;
   final VoidCallback onTap;
-
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: StitchCard(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFFE7F8EE)
-              : TemplateColors.promptBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: selected ? Border.all(color: const Color(0xFF34C759)) : null,
-        ),
-        child: Row(
-          children: [
-            const PhodexBadge(size: 30),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    repo.name,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 17,
-                      height: 22 / 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '${repo.currentBranch ?? repo.defaultBranch ?? 'no branch'} • ${repo.gitRoot}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: TemplateColors.labelSecondary,
-                      fontSize: 15,
-                      height: 20 / 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (selected)
-              const Icon(Icons.check_rounded, color: Color(0xFF34C759)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyRepos extends StatelessWidget {
-  const _EmptyRepos();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 100),
-      child: Text(
-        'No synced repositories yet. Start the companion sync, then pull to refresh.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: TemplateColors.labelSecondary,
-          fontSize: 17,
-          height: 22 / 17,
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 96),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: TemplateColors.labelSecondary),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7F2FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.folder_outlined,
+                  color: AppColors.accentPrimary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  repo.name,
+                  style: const TextStyle(
+                    fontSize: 27,
+                    height: 1.05,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            ],
           ),
-          const SizedBox(height: 12),
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 22,
+            runSpacing: 10,
+            children: [
+              _Meta(
+                Icons.account_tree_outlined,
+                repo.currentBranch ?? repo.defaultBranch ?? 'main',
+              ),
+              const _Meta(Icons.terminal_rounded, 'Local runtime'),
+              _Meta(
+                Icons.sync_rounded,
+                repo.isActive ? 'In sync' : 'Needs sync',
+                color: repo.isActive
+                    ? AppColors.accentPrimary
+                    : AppColors.accentError,
+              ),
+            ],
+          ),
+          if (selected)
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Chip(label: Text('Default')),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _Meta extends StatelessWidget {
+  const _Meta(this.icon, this.label, {this.color = AppColors.textSecondary});
+  final IconData icon;
+  final String label;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 18, color: color),
+      const SizedBox(width: 6),
+      Text(label, style: TextStyle(fontSize: 16, color: color)),
+    ],
+  );
+}
+
+class RepositoryDetailScreen extends ConsumerWidget {
+  const RepositoryDetailScreen({super.key, required this.repoId});
+  final String repoId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repos =
+        ref.watch(repositoriesProvider).asData?.value ??
+        const <SyncedRepository>[];
+    SyncedRepository? repo;
+    for (final item in repos) {
+      if (item.id == repoId) {
+        repo = item;
+        break;
+      }
+    }
+    final selectedRepo = repo;
+    if (selectedRepo == null)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return StitchScaffold(
+      active: StitchTab.repos,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
+        children: [
+          StitchHeader(
+            title: 'Repository details',
+            onBack: () => context.pop(),
+          ),
+          const SizedBox(height: 24),
+          StitchCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selectedRepo.name,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  selectedRepo.currentBranch ??
+                      selectedRepo.defaultBranch ??
+                      'main',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                const Divider(height: 32),
+                _DetailRow('Desktop runtime', selectedRepo.deviceId),
+                _DetailRow(
+                  'Sync status',
+                  selectedRepo.isActive ? 'Connected' : 'Disconnected',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          StitchPrimaryButton(
+            label: 'Set as default',
+            icon: Icons.check_circle_outline,
+            onPressed: () async {
+              await ref
+                  .read(repositoriesProvider.notifier)
+                  .selectRepository(repoId: selectedRepo.id);
+              if (context.mounted) context.go('/home');
+            },
+          ),
         ],
       ),
     );
   }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow(this.label, this.value);
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 15),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
 }

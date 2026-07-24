@@ -7,17 +7,18 @@ import 'app_typography.dart';
 class AppTheme {
   const AppTheme._();
 
-  static ThemeData dark() {
+  static ThemeData light() {
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.bgPrimary,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         surface: AppColors.bgSurface,
         primary: AppColors.accentPrimary,
         error: AppColors.accentError,
       ),
       textTheme: AppTypography.textTheme,
+      fontFamily: 'Inter',
     );
 
     return base.copyWith(
@@ -25,7 +26,6 @@ class AppTheme {
         color: AppColors.bgCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.card),
-          side: const BorderSide(color: AppColors.borderSubtle),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -33,11 +33,11 @@ class AppTheme {
         fillColor: AppColors.bgInput,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.input),
-          borderSide: const BorderSide(color: AppColors.borderSubtle),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.input),
-          borderSide: const BorderSide(color: AppColors.borderSubtle),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.input),
@@ -46,4 +46,7 @@ class AppTheme {
       ),
     );
   }
+
+  /// Backward-compatible alias for existing widget-test helpers.
+  static ThemeData dark() => light();
 }

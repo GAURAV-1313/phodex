@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BASE_URL="${PHODEX_BASE_URL:-http://127.0.0.1:8000}"
-PROMPT="${PHODEX_SMOKE_PROMPT:-Phodex smoke test $(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+PROMPT="${PHODEX_SMOKE_PROMPT:-Phodex worker lifecycle verification. Do not execute shell commands or edit files. Reply with exactly: OUTCOME: COMPLETED\nReal Codex runtime lifecycle verified.}"
 POLL_INTERVAL_SECONDS="${PHODEX_POLL_INTERVAL_SECONDS:-2}"
 POLL_TIMEOUT_SECONDS="${PHODEX_POLL_TIMEOUT_SECONDS:-240}"
 DEFAULT_LOCAL_TEST_TOKEN="test-token|local-user|gaurav@example.com|Gaurav Local"
@@ -185,6 +185,10 @@ if [[ "$current_status" == "completed" ]]; then
   echo "Smoke test passed."
   exit 0
 fi
+
+echo
+echo "Task failure details:" >&2
+echo "$issues_response" | jq '.items[] | {sequence, type, code, message, data}' >&2
 
 echo "Smoke test finished with non-completed status: $current_status" >&2
 exit 1

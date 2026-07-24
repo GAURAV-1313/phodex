@@ -6,11 +6,17 @@ import 'package:mobile/features/home/presentation/home_screen.dart';
 import 'package:mobile/features/home/presentation/recents_screen.dart';
 import 'package:mobile/features/repos/presentation/repos_screen.dart';
 import 'package:mobile/features/session/presentation/session_screen.dart';
+import 'package:mobile/features/welcome/presentation/welcome_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/welcome',
     routes: [
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (context, state) => const WelcomeScreen(),
+      ),
       GoRoute(
         path: '/home',
         name: 'home',
@@ -35,6 +41,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/repos',
         name: 'repos',
         builder: (context, state) => const ReposScreen(),
+      ),
+      GoRoute(
+        path: '/repos/:repoId',
+        name: 'repo-detail',
+        builder: (context, state) =>
+            RepositoryDetailScreen(repoId: state.pathParameters['repoId']!),
+      ),
+      GoRoute(
+        path: '/activity',
+        name: 'activity',
+        builder: (context, state) => const RecentsScreen(),
       ),
       GoRoute(
         path: '/approvals',

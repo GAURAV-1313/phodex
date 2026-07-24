@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -10,6 +10,7 @@ from app.models.enums import ApprovalStatus, TaskStatus
 from app.models.session import Session
 from app.models.task import Task
 from app.models.task_event import TaskEvent
+from app.services.redis_service import RedisService
 from app.utils.datetime import utcnow
 
 
@@ -42,9 +43,11 @@ class AccountService:
         self,
         session_factory: async_sessionmaker[AsyncSession],
         settings: Settings,
+        redis: RedisService,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
+        self._redis = redis
 
     async def active_sessions_count(self, user_id: UUID) -> int:
         async with self._session_factory() as session:
@@ -58,6 +61,11 @@ class AccountService:
             return int(count or 0)
 
     async def usage_summary(self, user_id: UUID) -> UsageSummary:
+        cache_key = f"account:usage:{user_id}"
+        cached = await self._redis.get_json(cache_key)
+        if isinstance(cached, dict):
+            return UsageSummary(**{key: int(value) for key, value in cached.items()})
+
         async with self._session_factory() as session:
             total_tasks = await self._count_tasks(session, user_id)
             queued_tasks = await self._count_tasks(session, user_id, TaskStatus.QUEUED)
@@ -89,7 +97,7 @@ class AccountService:
                 )
             )
 
-            return UsageSummary(
+            usage = UsageSummary(
                 total_tasks=int(total_tasks or 0),
                 queued_tasks=int(queued_tasks or 0),
                 running_tasks=int(running_tasks or 0),
@@ -101,6 +109,11 @@ class AccountService:
                 total_events=int(total_events or 0),
                 active_sessions=int(active_sessions or 0),
             )
+            await self._redis.set_json(cache_key, asdict(usage), self._settings.cache_ttl_seconds)
+            return usage
+
+    async def invalidate_usage(self, user_id: UUID) -> None:
+        await self._redis.delete(f"account:usage:{user_id}")
 
     async def limits(self, user_id: UUID) -> LimitStatus:
         usage = await self.usage_summary(user_id)

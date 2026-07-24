@@ -25,8 +25,10 @@ The laptop env uses:
 
 ```text
 WORKER_ENGINE=codex
-CODEX_COMMAND=/Applications/Codex.app/Contents/Resources/codex
-CODEX_ARGS=exec --json --skip-git-repo-check -
+CODEX_COMMAND=/opt/homebrew/bin/codex
+# Prevent interactive MCP servers (for example Figma/GitHub/browser tools) from
+# being inherited by the unattended Phodex worker. CLI login remains available.
+CODEX_ARGS=exec --json --skip-git-repo-check --ignore-user-config -
 ALLOW_INSECURE_TEST_TOKENS=true
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/phodex
 POSTGRES_IMAGE=arm64v8/postgres:16-alpine
@@ -35,14 +37,14 @@ POSTGRES_HOST_PORT=5433
 
 For safer real-worker testing, point `CODEX_DEFAULT_WORKDIR` to a disposable repo or sandbox folder.
 
-## 3. Start Postgres
+## 3. Start local infrastructure
 
 ```bash
 cd /Users/gaurav/phodex/backend
-docker compose -f docker-compose.yml -f docker-compose.laptop.yml up -d db
+docker compose -f docker-compose.yml -f docker-compose.laptop.yml up -d
 ```
 
-The laptop override maps Docker Postgres to `localhost:5433` so it does not conflict with a Mac-installed Postgres already using `5432`.
+The laptop override maps Docker Postgres to `localhost:5433` so it does not conflict with a Mac-installed Postgres already using `5432`. Redis is available at `localhost:6379`; Grafana, Jaeger, and Prometheus are available at ports `3001`, `16686`, and `9090`.
 
 ## 4. Install deps and migrate
 

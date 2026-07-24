@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ -z "${CODEX_COMMAND:-}" && -f "$BACKEND_DIR/.env" ]]; then
+  CODEX_COMMAND="$({
+    grep -E '^CODEX_COMMAND=' "$BACKEND_DIR/.env" || true
+  } | tail -n 1 | cut -d= -f2-)"
+fi
+
 CODEX_BIN="${CODEX_COMMAND:-/Applications/Codex.app/Contents/Resources/codex}"
 
 require_bin() {

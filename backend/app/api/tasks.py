@@ -37,9 +37,19 @@ def _sse_data(envelope: TaskEventEnvelope) -> str:
 @router.post("", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
 async def create_task(
     payload: TaskCreateRequest,
+    request: Request,
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskOut:
+    allowed = await services.redis.allow(
+        f"rate:task:{current_user.id}",
+        services.settings.task_rate_limit_per_minute,
+        60,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Task rate limit exceeded"
+        )
     try:
         task = await services.task_service.create_task(
             user_id=current_user.id,
@@ -179,16 +189,21 @@ async def stream_task_events(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     async def generator() -> AsyncIterator[str]:
+        queue = await services.event_service.subscribe(task_id)
+        from app.core.metrics import SSE_CONNECTIONS
+
+        SSE_CONNECTIONS.inc()
         backlog = await services.event_service.list_envelopes(
             task_id, after_sequence=after_sequence
         )
+        last_sequence = after_sequence
         for event in backlog:
             yield _sse_data(event)
+            last_sequence = event.sequence
 
         if not live:
             return
 
-        queue = await services.event_service.subscribe(task_id)
         try:
             while True:
                 if await request.is_disconnected():
@@ -196,10 +211,13 @@ async def stream_task_events(
 
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=15.0)
-                    yield _sse_data(event)
+                    if event.sequence > last_sequence:
+                        yield _sse_data(event)
+                        last_sequence = event.sequence
                 except TimeoutError:
                     yield ": keep-alive\n\n"
         finally:
+            SSE_CONNECTIONS.dec()
             await services.event_service.unsubscribe(task_id, queue)
 
     return StreamingResponse(

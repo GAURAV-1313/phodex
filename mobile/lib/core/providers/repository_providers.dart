@@ -7,14 +7,22 @@ import 'package:mobile/core/session/session_event_parser.dart';
 
 final apiConfigProvider = Provider<ApiConfig>((ref) {
   return const ApiConfig(
-    useNetwork: bool.fromEnvironment('PHODEX_USE_NETWORK'),
+    useNetwork: bool.fromEnvironment('PHODEX_USE_NETWORK', defaultValue: true),
     baseUrl: String.fromEnvironment(
       'PHODEX_BASE_URL',
-      defaultValue: 'http://127.0.0.1:8000',
+      defaultValue: 'http://10.0.2.2:8000',
     ),
     googleIdToken: String.fromEnvironment(
       'PHODEX_GOOGLE_ID_TOKEN',
-      defaultValue: 'test-token|local-user|gaurav@example.com|Gaurav Local',
+      defaultValue: '',
+    ),
+    googleServerClientId: String.fromEnvironment(
+      'PHODEX_GOOGLE_SERVER_CLIENT_ID',
+      defaultValue: '',
+    ),
+    googleIosClientId: String.fromEnvironment(
+      'PHODEX_GOOGLE_IOS_CLIENT_ID',
+      defaultValue: '',
     ),
   );
 });

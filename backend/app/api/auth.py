@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
@@ -14,8 +14,19 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/google", response_model=AuthTokenResponse)
 async def google_auth(
     payload: GoogleAuthRequest,
+    request: Request,
     services: Annotated[ServiceRegistry, Depends(get_services)],
 ) -> AuthTokenResponse:
+    client_host = request.client.host if request.client else "unknown"
+    allowed = await services.redis.allow(
+        f"rate:auth:{client_host}",
+        services.settings.auth_rate_limit_per_minute,
+        60,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many login attempts"
+        )
     try:
         profile = await services.google_auth_service.verify_id_token(payload.id_token)
     except UnauthorizedError as exc:

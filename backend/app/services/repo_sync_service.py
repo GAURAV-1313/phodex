@@ -101,7 +101,7 @@ class RepoSyncService:
                 .scalars()
                 .all()
             )
-            return repos
+            return list(repos)
 
     async def get_repository(self, user_id: UUID, repo_id: UUID) -> SyncedRepository:
         async with self._session_factory() as session:

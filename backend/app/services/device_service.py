@@ -74,7 +74,7 @@ class DeviceService:
                 .scalars()
                 .all()
             )
-            return devices
+            return list(devices)
 
     async def get_device(self, user_id: UUID, device_id: UUID) -> Device:
         async with self._session_factory() as session:

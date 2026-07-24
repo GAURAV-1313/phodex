@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from jose import JWTError, jwt
@@ -17,7 +17,7 @@ class JWTManager:
     def create_access_token(
         self, user_id: UUID, jti: UUID, expires_delta: timedelta | None = None
     ) -> tuple[str, datetime]:
-        expire_at = datetime.now(timezone.utc) + (
+        expire_at = datetime.now(UTC) + (
             expires_delta or timedelta(minutes=self._settings.access_token_ttl_minutes)
         )
         payload = {
@@ -32,10 +32,12 @@ class JWTManager:
 
     def decode_access_token(self, token: str) -> dict:
         try:
-            return jwt.decode(
-                token,
-                self._settings.jwt_secret_key,
-                algorithms=[self._settings.jwt_algorithm],
+            return dict(
+                jwt.decode(
+                    token,
+                    self._settings.jwt_secret_key,
+                    algorithms=[self._settings.jwt_algorithm],
+                )
             )
         except JWTError as exc:
             raise TokenError("Invalid access token") from exc

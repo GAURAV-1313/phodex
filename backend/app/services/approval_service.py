@@ -9,6 +9,7 @@ from app.models.enums import ApprovalStatus, TaskStatus
 from app.models.task import Task
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, NotFoundError
+from app.services.redis_service import RedisService
 from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:
@@ -20,9 +21,11 @@ class ApprovalService:
         self,
         session_factory: async_sessionmaker[AsyncSession],
         event_service: EventService,
+        redis: RedisService,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
+        self._redis = redis
         self._worker_dispatcher: WorkerDispatcher | None = None
 
     def set_worker_dispatcher(self, dispatcher: "WorkerDispatcher") -> None:
@@ -79,7 +82,7 @@ class ApprovalService:
                 .scalars()
                 .all()
             )
-            return approvals
+            return list(approvals)
 
     async def list_for_task(self, user_id: UUID, task_id: UUID) -> list[ApprovalRequest]:
         async with self._session_factory() as session:
@@ -95,7 +98,7 @@ class ApprovalService:
                 .scalars()
                 .all()
             )
-            return approvals
+            return list(approvals)
 
     async def approve(
         self, user_id: UUID, approval_id: UUID, note: str | None = None
@@ -113,6 +116,7 @@ class ApprovalService:
             await self._worker_dispatcher.handle_approval(
                 approval.task_id, approval.id, approved=True
             )
+        await self._invalidate_usage_for_task(approval.task_id)
         return approval
 
     async def reject(
@@ -143,7 +147,14 @@ class ApprovalService:
             await self._worker_dispatcher.handle_approval(
                 approval.task_id, approval.id, approved=False
             )
+        await self._invalidate_usage_for_task(approval.task_id)
         return approval
+
+    async def _invalidate_usage_for_task(self, task_id: UUID) -> None:
+        async with self._session_factory() as session:
+            task = await session.get(Task, task_id)
+            if task is not None:
+                await self._redis.delete(f"account:usage:{task.user_id}")
 
     async def _resolve(
         self,

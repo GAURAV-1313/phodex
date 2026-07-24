@@ -9,13 +9,13 @@ class AppTypography {
     displaySmall: TextStyle(
       fontSize: 34,
       height: 40 / 34,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w700,
       color: AppColors.textPrimary,
     ),
     headlineMedium: TextStyle(
       fontSize: 28,
       height: 34 / 28,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w700,
       color: AppColors.textPrimary,
     ),
     headlineSmall: TextStyle(

@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import Settings
 from app.main import create_app
+from app.workers.codex_worker import CodexWorkerEngine
 
 
 def _write_stub_runtime(script_path) -> None:
@@ -40,6 +41,8 @@ async def codex_app(tmp_path) -> AsyncIterator:
 
     settings = Settings(
         DATABASE_URL=f"sqlite+aiosqlite:///{db_file}",
+        REDIS_URL=None,
+        OTEL_EXPORTER_OTLP_ENDPOINT=None,
         AUTO_CREATE_SCHEMA=True,
         ALLOW_INSECURE_TEST_TOKENS=True,
         JWT_SECRET_KEY="test-secret",
@@ -125,3 +128,9 @@ async def test_codex_worker_executes_runtime_after_approval(codex_client: AsyncC
         "Applied backend updates from Codex runtime." in content for content in assistant_messages
     )
     assert any("Visible Codex final answer." in content for content in assistant_messages)
+
+
+def test_codex_worker_recognizes_explicit_blocked_outcomes():
+    assert CodexWorkerEngine._is_blocked_outcome("OUTCOME: BLOCKED\nDocker is unavailable.")
+    assert CodexWorkerEngine._is_blocked_outcome("Operational log — **BLOCKED**")
+    assert not CodexWorkerEngine._is_blocked_outcome("OUTCOME: COMPLETED")

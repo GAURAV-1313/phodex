@@ -16,12 +16,25 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = False
     log_level: str = "INFO"
+    allowed_origins: str = Field(
+        default="http://localhost:3000,http://localhost:5173,http://10.0.2.2:8000",
+        alias="ALLOWED_ORIGINS",
+    )
 
     database_url: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/phodex",
         alias="DATABASE_URL",
     )
     alembic_database_url: str | None = Field(default=None, alias="ALEMBIC_DATABASE_URL")
+    redis_url: str | None = Field(default=None, alias="REDIS_URL")
+    redis_channel: str = Field(default="phodex:task-events", alias="REDIS_EVENT_CHANNEL")
+    cache_ttl_seconds: int = Field(default=30, alias="CACHE_TTL_SECONDS")
+    auth_rate_limit_per_minute: int = Field(default=10, alias="AUTH_RATE_LIMIT_PER_MINUTE")
+    task_rate_limit_per_minute: int = Field(default=30, alias="TASK_RATE_LIMIT_PER_MINUTE")
+    metrics_enabled: bool = Field(default=True, alias="METRICS_ENABLED")
+    otel_exporter_otlp_endpoint: str | None = Field(
+        default=None, alias="OTEL_EXPORTER_OTLP_ENDPOINT"
+    )
 
     jwt_secret_key: str = Field(default="change-me-in-production", alias="JWT_SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
@@ -49,6 +62,10 @@ class Settings(BaseSettings):
         default="medium", alias="CODEX_INITIAL_APPROVAL_RISK_LEVEL"
     )
     codex_default_workdir: str | None = Field(default=None, alias="CODEX_DEFAULT_WORKDIR")
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
 
 @lru_cache

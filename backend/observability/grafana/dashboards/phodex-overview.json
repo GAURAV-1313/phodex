@@ -1,0 +1,14 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"type":"timeseries","title":"HTTP requests","targets":[{"expr":"sum(rate(phodex_http_requests_total[1m])) by (status)"}]},
+    {"type":"timeseries","title":"p95 HTTP latency","targets":[{"expr":"histogram_quantile(0.95, sum(rate(phodex_http_request_duration_seconds_bucket[5m])) by (le))"}]},
+    {"type":"stat","title":"Open SSE connections","targets":[{"expr":"phodex_sse_connections"}]},
+    {"type":"timeseries","title":"Task transitions","targets":[{"expr":"sum(rate(phodex_task_transitions_total[5m])) by (status)"}]},
+    {"type":"timeseries","title":"Worker duration","targets":[{"expr":"histogram_quantile(0.95, sum(rate(phodex_task_execution_duration_seconds_bucket[5m])) by (le))"}]}
+  ],
+  "schemaVersion": 39,
+  "title": "Phodex Backend Overview",
+  "version": 1
+}

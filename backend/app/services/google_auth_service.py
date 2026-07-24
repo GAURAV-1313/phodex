@@ -46,7 +46,7 @@ class GoogleAuthService:
                 requests.Request(),
                 self._settings.google_client_id,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise UnauthorizedError("Unable to verify Google ID token") from exc
 
         sub = claims.get("sub")
