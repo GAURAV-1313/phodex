@@ -2,12 +2,23 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 from app.core.config import Settings
+
+_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class TokenError(Exception):
     pass
+
+
+def hash_password(plain: str) -> str:
+    return _pwd_context.hash(plain)
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return _pwd_context.verify(plain, hashed)
 
 
 class JWTManager:

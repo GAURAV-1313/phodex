@@ -4,11 +4,15 @@ class AccountSummary {
   const AccountSummary({
     required this.user,
     required this.activeSessions,
+    required this.deviceOnline,
+    required this.deviceLastSeenAt,
     required this.generatedAt,
   });
 
   final UserProfile user;
   final int activeSessions;
+  final bool deviceOnline;
+  final DateTime? deviceLastSeenAt;
   final DateTime generatedAt;
 }
 

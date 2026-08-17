@@ -74,6 +74,20 @@ final accountRepositoryProvider = Provider<AccountRepository>((ref) {
   return MockAccountRepository(ref.watch(mockBackendStoreProvider));
 });
 
+final gitOpsRepositoryProvider = Provider<GitOpsRepository>((ref) {
+  if (ref.watch(apiConfigProvider).useNetwork) {
+    return NetworkGitOpsRepository(ref.watch(apiClientProvider));
+  }
+  return MockGitOpsRepository(ref.watch(mockBackendStoreProvider));
+});
+
+final aiSettingsRepositoryProvider = Provider<AiSettingsRepository>((ref) {
+  if (ref.watch(apiConfigProvider).useNetwork) {
+    return NetworkAiSettingsRepository(ref.watch(apiClientProvider));
+  }
+  return MockAiSettingsRepository(ref.watch(mockBackendStoreProvider));
+});
+
 final sessionStreamRepositoryProvider = Provider<SessionStreamRepository>((
   ref,
 ) {

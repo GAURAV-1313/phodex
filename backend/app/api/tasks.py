@@ -23,7 +23,6 @@ from app.schemas.tasks import (
     TaskOut,
     TaskReplyRequest,
 )
-from app.services.exceptions import ConflictError, LimitExceededError, NotFoundError
 from app.services.service_registry import ServiceRegistry
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -50,21 +49,12 @@ async def create_task(
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Task rate limit exceeded"
         )
-    try:
-        task = await services.task_service.create_task(
-            user_id=current_user.id,
-            prompt=payload.prompt,
-            project_context_id=payload.project_context_id,
-            title=payload.title,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except LimitExceededError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={"code": exc.code, "message": str(exc)},
-        ) from exc
-
+    task = await services.task_service.create_task(
+        user_id=current_user.id,
+        prompt=payload.prompt,
+        project_context_id=payload.project_context_id,
+        title=payload.title,
+    )
     return TaskOut.model_validate(task)
 
 
@@ -83,13 +73,9 @@ async def get_task(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskDetailResponse:
-    try:
-        task, messages, events, approvals = await services.task_service.get_task_detail(
-            current_user.id, task_id
-        )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    task, messages, events, approvals = await services.task_service.get_task_detail(
+        current_user.id, task_id
+    )
     return TaskDetailResponse(
         task=TaskOut.model_validate(task),
         messages=[TaskMessageOut.model_validate(message) for message in messages],
@@ -105,13 +91,7 @@ async def reply_to_task(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskMessageOut:
-    try:
-        message = await services.task_service.add_reply(current_user.id, task_id, payload.content)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-
+    message = await services.task_service.add_reply(current_user.id, task_id, payload.content)
     return TaskMessageOut.model_validate(message)
 
 
@@ -121,12 +101,7 @@ async def cancel_task(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskOut:
-    try:
-        task = await services.task_service.cancel_task(current_user.id, task_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    task = await services.task_service.cancel_task(current_user.id, task_id)
     return TaskOut.model_validate(task)
 
 
@@ -136,11 +111,7 @@ async def list_messages(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskMessagesResponse:
-    try:
-        messages = await services.task_service.list_messages(current_user.id, task_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    messages = await services.task_service.list_messages(current_user.id, task_id)
     return TaskMessagesResponse(
         items=[TaskMessageOut.model_validate(message) for message in messages]
     )
@@ -152,11 +123,7 @@ async def list_events(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskEventsResponse:
-    try:
-        events = await services.task_service.list_events(current_user.id, task_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    events = await services.task_service.list_events(current_user.id, task_id)
     return TaskEventsResponse(items=events)
 
 
@@ -166,11 +133,7 @@ async def list_task_issues(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> TaskIssuesResponse:
-    try:
-        issues = await services.task_service.list_issues(current_user.id, task_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    issues = await services.task_service.list_issues(current_user.id, task_id)
     return TaskIssuesResponse(items=[TaskIssueOut.model_validate(issue) for issue in issues])
 
 
@@ -183,10 +146,7 @@ async def stream_task_events(
     after_sequence: Annotated[int, Query(ge=0)] = 0,
     live: Annotated[bool, Query(description="Keep stream open for live events")] = True,
 ) -> StreamingResponse:
-    try:
-        await services.task_service.get_task(current_user.id, task_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    await services.task_service.get_task(current_user.id, task_id)
 
     async def generator() -> AsyncIterator[str]:
         queue = await services.event_service.subscribe(task_id)

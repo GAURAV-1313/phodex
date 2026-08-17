@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
@@ -10,7 +10,6 @@ from app.schemas.approvals import (
     ApprovalRequestOut,
     PendingApprovalsResponse,
 )
-from app.services.exceptions import ConflictError, NotFoundError
 from app.services.service_registry import ServiceRegistry
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
@@ -34,15 +33,9 @@ async def approve(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ApprovalRequestOut:
-    try:
-        approval = await services.approval_service.approve(
-            current_user.id, approval_id, note=payload.note
-        )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-
+    approval = await services.approval_service.approve(
+        current_user.id, approval_id, note=payload.note
+    )
     return ApprovalRequestOut.model_validate(approval)
 
 
@@ -53,13 +46,7 @@ async def reject(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ApprovalRequestOut:
-    try:
-        approval = await services.approval_service.reject(
-            current_user.id, approval_id, note=payload.note
-        )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except ConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-
+    approval = await services.approval_service.reject(
+        current_user.id, approval_id, note=payload.note
+    )
     return ApprovalRequestOut.model_validate(approval)

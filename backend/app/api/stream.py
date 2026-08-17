@@ -4,13 +4,12 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
 from app.schemas.tasks import TaskEventEnvelope
-from app.services.exceptions import NotFoundError
 from app.services.service_registry import ServiceRegistry
 
 router = APIRouter(prefix="/stream", tags=["stream"])
@@ -30,10 +29,7 @@ async def stream_task_events_alias(
     after_sequence: Annotated[int, Query(ge=0)] = 0,
     live: Annotated[bool, Query(description="Keep stream open for live events")] = True,
 ) -> StreamingResponse:
-    try:
-        await services.task_service.get_task(current_user.id, task_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    await services.task_service.get_task(current_user.id, task_id)
 
     async def generator() -> AsyncIterator[str]:
         backlog = await services.event_service.list_envelopes(

@@ -333,5 +333,12 @@ class TaskService:
                 raise NotFoundError("Task not found")
             return task.status
 
+    async def get_user_id(self, task_id: UUID) -> UUID:
+        async with self._session_factory() as session:
+            task = await session.get(Task, task_id)
+            if task is None:
+                raise NotFoundError("Task not found")
+            return task.user_id
+
     async def _invalidate_usage(self, user_id: UUID) -> None:
         await self._redis.delete(f"account:usage:{user_id}")

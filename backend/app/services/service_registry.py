@@ -6,10 +6,12 @@ from app.services.approval_service import ApprovalService
 from app.services.auth_service import AuthService
 from app.services.device_service import DeviceService
 from app.services.event_service import EventService
+from app.services.git_service import GitService
 from app.services.google_auth_service import GoogleAuthService
 from app.services.redis_service import RedisService
 from app.services.repo_sync_service import RepoSyncService
 from app.services.task_service import TaskService
+from app.services.user_ai_settings_service import UserAiSettingsService
 from app.services.worker_dispatcher import WorkerDispatcher
 
 
@@ -25,4 +27,6 @@ class ServiceRegistry:
     device_service: DeviceService
     repo_sync_service: RepoSyncService
     worker_dispatcher: WorkerDispatcher
+    git_service: GitService
+    user_ai_settings_service: UserAiSettingsService
     redis: RedisService

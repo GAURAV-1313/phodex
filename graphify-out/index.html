@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Age Counter">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Age Counter</title>
+
+    <script type="application/json" id="manifest-json">
+    {
+        "name": "Age Counter",
+        "short_name": "Age",
+        "start_url": ".",
+        "display": "standalone",
+        "background_color": "#0a0a0a",
+        "theme_color": "#0a0a0a",
+        "description": "Live age counter widget",
+        "icons": [{
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%230a0a0a' stroke='%23333' stroke-width='4'/><text x='256' y='290' text-anchor='middle' font-family='monospace' font-size='200' font-weight='bold' fill='white'>∞</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }]
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            padding: 16px;
+        }
+        .widget {
+            background: #0a0a0a;
+            border: 0.5px solid #2a2a2a;
+            border-radius: 28px;
+            padding: 24px 20px 20px;
+            width: 100%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+        }
+        .widget:active { transform: scale(0.97); }
+        .settings {
+            display: none;
+            background: #111;
+            border: 0.5px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .settings.visible { display: flex; }
+        .settings label {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .settings input {
+            background: #0a0a0a;
+            border: 0.5px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 15px;
+            width: 100%;
+            color-scheme: dark;
+        }
+        .settings input:focus { outline: none; border-color: #666; }
+        .settings button {
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+        }
+        .settings button:active { opacity: 0.8; }
+        .settings button.secondary {
+            background: transparent;
+            color: #888;
+            border: 0.5px solid #2a2a2a;
+            font-weight: 400;
+        }
+        .age-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 2px;
+        }
+        .age-years {
+            font-size: 52px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+        .age-decimal {
+            font-size: 30px;
+            font-weight: 600;
+            color: #888;
+            letter-spacing: -0.5px;
+        }
+        .age-unit {
+            font-size: 15px;
+            font-weight: 400;
+            color: #555;
+            margin-left: 4px;
+        }
+        .sub-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+            width: 100%;
+        }
+        .sub-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 4px 0;
+        }
+        .sub-label {
+            font-size: 11px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .sub-value {
+            font-size: 13px;
+            color: #ccc;
+            font-weight: 500;
+        }
+        .divider {
+            width: 100%;
+            height: 0.5px;
+            background: #2a2a2a;
+            margin: 2px 0;
+        }
+        .progress-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .progress-label {
+            font-size: 10px;
+            color: #555;
+            text-align: center;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .progress-bar-outer {
+            width: 100%;
+            height: 3px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background: #fff;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .install-banner {
+            display: none;
+            background: #111;
+            border: 0.5px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 16px 20px;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #888;
+        }
+        .install-banner.visible { display: block; }
+        .install-banner a { color: #fff; text-decoration: underline; cursor: pointer; }
+        @media (min-width: 500px) {
+            .widget { padding: 28px 24px 24px; border-radius: 32px; }
+            .age-years { font-size: 64px; }
+            .age-decimal { font-size: 36px; }
+            .sub-value { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+
+    <div class="widget" id="widget" title="Tap to configure">
+        <div class="age-row">
+            <span class="age-years" id="years">--</span>
+            <span class="age-decimal" id="decimal">.----</span>
+            <span class="age-unit">yrs</span>
+        </div>
+        <div class="divider"></div>
+        <div class="sub-row">
+            <div class="sub-item"><span class="sub-label">Days</span><span class="sub-value" id="days">--</span></div>
+            <div class="sub-item"><span class="sub-label">Hours</span><span class="sub-value" id="hours">--</span></div>
+            <div class="sub-item"><span class="sub-label">Minutes</span><span class="sub-value" id="minutes">--</span></div>
+            <div class="sub-item"><span class="sub-label">Seconds</span><span class="sub-value" id="seconds">--</span></div>
+        </div>
+        <div class="progress-section">
+            <span class="progress-label" id="progressText">Lived: --%</span>
+            <div class="progress-bar-outer">
+                <div class="progress-bar-inner" id="progressBar" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings" id="settings">
+        <label for="birthDate">Birth Date</label>
+        <input type="date" id="birthDate">
+        <label for="lifeExpectancy">Life Expectancy (years)</label>
+        <input type="number" id="lifeExpectancy" min="1" max="150" value="80">
+        <button id="saveBtn">Save</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+    </div>
+
+    <div class="install-banner" id="installBanner">
+        📲 <a id="installLink">Add to Home Screen</a> for a widget-like experience
+    </div>
+
+</div>
+
+<script>
+(function(){
+var y=document.getElementById('years');
+var d=document.getElementById('decimal');
+var dy=document.getElementById('days');
+var h=document.getElementById('hours');
+var m=document.getElementById('minutes');
+var s=document.getElementById('seconds');
+var pt=document.getElementById('progressText');
+var pb=document.getElementById('progressBar');
+var w=document.getElementById('widget');
+var st=document.getElementById('settings');
+var bd=document.getElementById('birthDate');
+var le=document.getElementById('lifeExpectancy');
+var sb=document.getElementById('saveBtn');
+var rb=document.getElementById('resetBtn');
+var ib=document.getElementById('installBanner');
+var il=document.getElementById('installLink');
+
+var birthMs=null;
+var lifeExp=80;
+var sv=false;
+var dp=null;
+
+function ld(){
+    var v=localStorage.getItem('ac_birth');
+    if(v){ birthMs=parseInt(v); if(isNaN(birthMs)||birthMs<=0) birthMs=null; }
+    var e=localStorage.getItem('ac_le');
+    if(e){ lifeExp=parseInt(e); if(isNaN(lifeExp)||lifeExp<1) lifeExp=80; }
+    le.value=lifeExp;
+    if(birthMs){ var dt=new Date(birthMs); bd.value=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+}
+
+function svs(){
+    if(birthMs) localStorage.setItem('ac_birth',birthMs.toString());
+    localStorage.setItem('ac_le',lifeExp.toString());
+}
+
+function rst(){
+    localStorage.removeItem('ac_birth');
+    localStorage.removeItem('ac_le');
+    birthMs=null; lifeExp=80;
+    bd.value=''; le.value='80';
+    up();
+}
+
+function fmt(n){ return n.toLocaleString('en-US',{maximumFractionDigits:0}); }
+function cmt(n){
+    if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+    if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+    if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+    return n.toFixed(0);
+}
+
+function up(){
+    if(!birthMs){
+        y.textContent='--'; d.textContent='.----';
+        dy.textContent='--'; h.textContent='--'; m.textContent='--'; s.textContent='--';
+        pt.textContent='Tap to set DOB'; pb.style.width='0%';
+        return;
+    }
+    var now=Date.now();
+    var age=now-birthMs;
+    if(age<0){
+        y.textContent='0'; d.textContent='.0000';
+        dy.textContent='0'; h.textContent='0'; m.textContent='0'; s.textContent='0';
+        pt.textContent='Not born yet'; pb.style.width='0%';
+        return;
+    }
+    var mpy=365.25*24*60*60*1000;
+    var yr=age/mpy;
+    var yi=Math.floor(yr);
+    var yd=yr-yi;
+    var ds='.'+String(Math.floor(yd*10000)).padStart(4,'0');
+    var td=Math.floor(age/(24*60*60*1000));
+    var th=Math.floor(age/(60*60*1000));
+    var tm=Math.floor(age/(60*1000));
+    var ts=Math.floor(age/1000);
+    y.textContent=yi; d.textContent=ds;
+    dy.textContent=fmt(td); h.textContent=fmt(th);
+    m.textContent=cmt(tm); s.textContent=cmt(ts);
+    if(lifeExp>0){
+        var pct=(age/(lifeExp*mpy))*100;
+        pt.textContent='Lived: '+pct.toFixed(1)+'%';
+        pb.style.width=Math.min(pct,100).toFixed(1)+'%';
+    }
+}
+
+function tg(){
+    sv=!sv;
+    if(sv){
+        st.classList.add('visible');
+        if(birthMs){ var dt=new Date(birthMs); bd.value=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+        le.value=lifeExp;
+    } else { st.classList.remove('visible'); }
+}
+
+function save(){
+    var v=bd.value;
+    if(!v){ alert('Please select your birth date.'); return; }
+    var p=new Date(v+'T00:00:00').getTime();
+    if(isNaN(p)||p>Date.now()){ alert('Please select a valid birth date in the past.'); return; }
+    birthMs=p;
+    lifeExp=parseInt(le.value,10)||80;
+    if(lifeExp<1) lifeExp=80;
+    svs(); up();
+    st.classList.remove('visible'); sv=false;
+}
+
+w.addEventListener('click',tg);
+sb.addEventListener('click',save);
+rb.addEventListener('click',function(){
+    if(confirm('Reset your age counter?')){ rst(); st.classList.remove('visible'); sv=false; }
+});
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sv){ st.classList.remove('visible'); sv=false; } });
+
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); dp=e; ib.classList.add('visible'); });
+il.addEventListener('click',async function(){ if(dp){ dp.prompt(); await dp.userChoice; dp=null; ib.classList.remove('visible'); } });
+window.addEventListener('appinstalled',function(){ ib.classList.remove('visible'); });
+if(window.matchMedia('(display-mode: standalone)').matches){ ib.classList.remove('visible'); }
+
+var mj=document.getElementById('manifest-json');
+if(mj){
+    var bl=new Blob([mj.textContent],{type:'application/json'});
+    var url=URL.createObjectURL(bl);
+    var lk=document.createElement('link');
+    lk.rel='manifest'; lk.href=url;
+    document.head.appendChild(lk);
+}
+
+if('serviceWorker' in navigator){
+    var swc='var C="age-v2";self.addEventListener("install",e=>{self.skipWaiting()});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==C).map(n=>caches.delete(n)))));self.clients.claim()});self.addEventListener("fetch",e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res.ok){var cc=res.clone();caches.open(C).then(ca=>ca.put(e.request,cc))}return res}).catch(()=>caches.match(e.request))))});';
+    var sb2=new Blob([swc],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(sb2),{scope:'/'}).catch(console.warn);
+}
+
+ld(); up();
+setInterval(up,200);
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') up(); });
+})();
+</script>
+</body>
+</html>
+
+
+
+

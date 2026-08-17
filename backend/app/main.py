@@ -10,6 +10,7 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from starlette.middleware.base import RequestResponseEndpoint
 
+from app.api.error_handlers import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
@@ -22,14 +23,17 @@ from app.services.approval_service import ApprovalService
 from app.services.auth_service import AuthService
 from app.services.device_service import DeviceService
 from app.services.event_service import EventBus, EventService
+from app.services.git_service import GitService
 from app.services.google_auth_service import GoogleAuthService
 from app.services.redis_service import RedisService
 from app.services.repo_sync_service import RepoSyncService
 from app.services.service_registry import ServiceRegistry
 from app.services.task_service import TaskService
+from app.services.user_ai_settings_service import UserAiSettingsService
 from app.services.worker_dispatcher import WorkerDispatcher
 from app.workers.base import WorkerEngine
-from app.workers.codex_worker import CodexWorkerEngine
+from app.workers.claude import ClaudeWorkerEngine
+from app.workers.codex import CodexWorkerEngine
 from app.workers.fake_worker import FakeWorkerEngine
 
 
@@ -53,27 +57,36 @@ def _build_service_registry(
         event_service=event_service,
         redis=redis,
     )
+    user_ai_settings_service = UserAiSettingsService(
+        session_factory=session_factory,
+        settings=settings,
+    )
 
     worker_engine: WorkerEngine
-    worker_engine_name = settings.worker_engine.strip().lower()
-    if worker_engine_name == "codex":
+    if settings.worker_engine == "codex":
         worker_engine = CodexWorkerEngine(
             settings=settings,
             session_factory=session_factory,
             task_service=task_service,
             event_service=event_service,
             approval_service=approval_service,
+            user_ai_settings_service=user_ai_settings_service,
         )
-    elif worker_engine_name == "fake":
+    elif settings.worker_engine == "claude":
+        worker_engine = ClaudeWorkerEngine(
+            settings=settings,
+            session_factory=session_factory,
+            task_service=task_service,
+            event_service=event_service,
+            approval_service=approval_service,
+            user_ai_settings_service=user_ai_settings_service,
+        )
+    else:
         worker_engine = FakeWorkerEngine(
             settings=settings,
             task_service=task_service,
             event_service=event_service,
             approval_service=approval_service,
-        )
-    else:
-        raise ValueError(
-            f"Unsupported WORKER_ENGINE='{settings.worker_engine}'. Use 'fake' or 'codex'."
         )
     worker_dispatcher = WorkerDispatcher(worker_engine=worker_engine)
 
@@ -99,6 +112,8 @@ def _build_service_registry(
         device_service=DeviceService(session_factory=session_factory),
         repo_sync_service=RepoSyncService(session_factory=session_factory),
         worker_dispatcher=worker_dispatcher,
+        git_service=GitService(session_factory=session_factory, event_service=event_service),
+        user_ai_settings_service=user_ai_settings_service,
         redis=redis,
     )
 
@@ -130,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title=app_settings.app_name, debug=app_settings.debug, lifespan=lifespan)
     instrument_fastapi(app)
+    register_exception_handlers(app)
 
     @app.middleware("http")
     async def observe_request(request: Request, call_next: RequestResponseEndpoint) -> Response:

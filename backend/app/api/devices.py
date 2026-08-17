@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
@@ -11,7 +11,6 @@ from app.schemas.devices import (
     DeviceOut,
     DeviceRegisterRequest,
 )
-from app.services.exceptions import NotFoundError
 from app.services.service_registry import ServiceRegistry
 
 router = APIRouter(prefix="/devices", tags=["devices"])
@@ -33,11 +32,7 @@ async def heartbeat(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> DeviceOut:
-    try:
-        device = await services.device_service.heartbeat(current_user.id, payload)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    device = await services.device_service.heartbeat(current_user.id, payload)
     return DeviceOut.model_validate(device)
 
 
@@ -56,9 +51,5 @@ async def get_device(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> DeviceOut:
-    try:
-        device = await services.device_service.get_device(current_user.id, device_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    device = await services.device_service.get_device(current_user.id, device_id)
     return DeviceOut.model_validate(device)

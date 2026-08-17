@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/domain/models/models.dart';
 import 'package:mobile/features/approvals/application/approvals_controller.dart';
 import 'package:mobile/shared/theme/theme.dart';
+import 'package:mobile/shared/widgets/phodex_mascot.dart';
+import 'package:mobile/shared/widgets/stagger_in.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
 
 class ApprovalsScreen extends ConsumerWidget {
@@ -25,26 +27,18 @@ class ApprovalsScreen extends ConsumerWidget {
                     onPressed: () => context.pop(),
                     icon: const Icon(Icons.close),
                   ),
-                  const Spacer(),
-                  const Text(
-                    'Phodex',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 48),
                 ],
               ),
               const SizedBox(height: 70),
               if (items.isEmpty)
                 const _NoApprovals()
               else ...[
-                const Text(
+                Text(
                   'Pending Approval',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 38,
-                    letterSpacing: -1.2,
-                    fontWeight: FontWeight.w700,
+                  style: AppTypography.display(
+                    fontSize: AppTypeScale.displayLarge,
+                    letterSpacing: -1,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -52,29 +46,34 @@ class ApprovalsScreen extends ConsumerWidget {
                   'Your AI engineer needs permission to continue an important action.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 19,
+                    fontSize: AppTypeScale.subhead,
                     height: 1.45,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 58),
-                for (final item in items)
-                  _ApprovalReview(
-                    approval: item,
-                    onApprove: () => ref
-                        .read(approvalsProvider.notifier)
-                        .approve(approvalId: item.id),
-                    onReject: () => ref
-                        .read(approvalsProvider.notifier)
-                        .reject(approvalId: item.id),
-                    onTask: () => context.go('/session/${item.taskId}'),
+                for (final (i, item) in items.indexed)
+                  StaggerIn(
+                    index: i,
+                    child: _ApprovalReview(
+                      approval: item,
+                      onApprove: () => ref
+                          .read(approvalsProvider.notifier)
+                          .approve(approvalId: item.id),
+                      onReject: () => ref
+                          .read(approvalsProvider.notifier)
+                          .reject(approvalId: item.id),
+                      onTask: () => context.go('/session/${item.taskId}'),
+                    ),
                   ),
               ],
             ],
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) =>
-              Center(child: Text('Could not load approvals: $error')),
+          loading: () => const PhodexLoading(),
+          error: (error, _) => StitchErrorState(
+            title: "Couldn't load approvals",
+            onRetry: () => ref.invalidate(approvalsProvider),
+          ),
         ),
       ),
     );
@@ -84,25 +83,24 @@ class ApprovalsScreen extends ConsumerWidget {
 class _NoApprovals extends StatelessWidget {
   const _NoApprovals();
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.only(top: 160),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 140),
     child: Column(
       children: [
-        Icon(
-          Icons.verified_user_outlined,
-          size: 72,
-          color: AppColors.accentSuccess,
-        ),
-        SizedBox(height: 20),
+        const PhodexMascot(size: 84, mood: MascotMood.success),
+        const SizedBox(height: 24),
         Text(
           'Nothing needs your approval',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+          style: AppTypography.display(fontSize: AppTypeScale.title),
         ),
-        SizedBox(height: 10),
-        Text(
+        const SizedBox(height: 10),
+        const Text(
           'Your agent will pause here whenever it needs a decision.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 17),
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: AppTypeScale.body,
+          ),
         ),
       ],
     ),
@@ -125,6 +123,11 @@ class _ApprovalReview extends StatelessWidget {
   Widget build(BuildContext context) {
     final command = approval.payload['command']?.toString() ?? approval.title;
     final risk = approval.payload['risk_level']?.toString() ?? 'medium';
+    final kindLabel = approval.kind
+        .split('_')
+        .where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1))
+        .join(' ');
     return StitchCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,17 +146,17 @@ class _ApprovalReview extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'REPOSITORY',
-                  style: TextStyle(
+                  kindLabel.isEmpty ? 'ACTION' : kindLabel.toUpperCase(),
+                  style: const TextStyle(
                     letterSpacing: 1.3,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textMuted,
                   ),
                 ),
               ),
-              Chip(label: Text('$risk risk'.toUpperCase())),
+              _RiskBadge(risk: risk),
             ],
           ),
           const SizedBox(height: 22),
@@ -197,8 +200,7 @@ class _ApprovalReview extends StatelessWidget {
               '\$ $command',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: 'monospace',
+              style: AppTypography.code(
                 fontSize: 15,
                 color: AppColors.accentPrimary,
               ),
@@ -220,17 +222,64 @@ class _ApprovalReview extends StatelessWidget {
               child: const Text('View full execution plan'),
             ),
           ),
-          StitchPrimaryButton(label: 'Approve', onPressed: onApprove),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton.tonal(
-              onPressed: onReject,
-              child: const Text('Reject'),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: onReject,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.borderSubtle),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: const Text('Reject'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StitchPrimaryButton(
+                  label: 'Approve',
+                  onPressed: onApprove,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RiskBadge extends StatelessWidget {
+  const _RiskBadge({required this.risk});
+  final String risk;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (risk.toLowerCase()) {
+      'low' => AppColors.accentSuccess,
+      'high' || 'critical' => AppColors.accentError,
+      _ => AppColors.accentWarning,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '${risk.toUpperCase()} RISK',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: .4,
+          color: color,
+        ),
       ),
     );
   }

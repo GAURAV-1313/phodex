@@ -1,0 +1,3721 @@
+[
+  {
+    "index": 1,
+    "name": "Eunice",
+    "organization": "Africa AI Village (Qhala Trust)",
+    "email": "eunice.mwangi@qhala.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.335245"
+  },
+  {
+    "index": 2,
+    "name": "Shailendra",
+    "organization": "AKIS TECH. LIMITED (Russian Pavilion - Russoft)",
+    "email": "shailendranjaiswal@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.335695"
+  },
+  {
+    "index": 3,
+    "name": "Joseph",
+    "organization": "Andhra Pradesh Technology Services Limited",
+    "email": "kollabathula.joseph@pwc.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx08-00096706.pphosted.com"
+      ],
+      [
+        10,
+        "mx07-00096706.pphosted.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.335790"
+  },
+  {
+    "index": 4,
+    "name": "Manoj",
+    "organization": "Apisod Technologies Private Limited",
+    "email": "manoj@complianceforindia.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.335931"
+  },
+  {
+    "index": 5,
+    "name": "Jenna",
+    "organization": "Apolitical.co",
+    "email": "joel.smith@apolitical.co",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.335992"
+  },
+  {
+    "index": 6,
+    "name": "Reshu",
+    "organization": "AWS/Amazon",
+    "email": "reshunat@amazon.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "amazon-smtp.amazon.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": true,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.336041"
+  },
+  {
+    "index": 7,
+    "name": "Adil",
+    "organization": "Bharat1.ai",
+    "email": "adil@nextchapter.co.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.336108"
+  },
+  {
+    "index": 8,
+    "name": "Yera",
+    "organization": "Kgraph AI Solutions Private Limited",
+    "email": "yera@myblue.ai",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "myblue-ai.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.336196"
+  },
+  {
+    "index": 9,
+    "name": "Arpan",
+    "organization": "Bluemachines (Apna.com)",
+    "email": "arpan.khosla@apna.co",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        32767,
+        "ms81285017.msv1.invalid"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.336673"
+  },
+  {
+    "index": 10,
+    "name": "Anjul",
+    "organization": "CBS INFORMATION SYSYEMS INC",
+    "email": "anjul.katare@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:36.337090"
+  },
+  {
+    "index": 11,
+    "name": "Anurag",
+    "organization": "Central Bureau of Communication (MIB)",
+    "email": "avproduction-cbc@gov.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:46.815753"
+  },
+  {
+    "index": 12,
+    "name": "Jai",
+    "organization": "Centre for Development of Telematics (C-DOT)",
+    "email": "head-mktg@cdot.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ],
+      [
+        60,
+        "sandesh.cdot.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:25:56.833291"
+  },
+  {
+    "index": 13,
+    "name": "David",
+    "organization": "Centre for Open Societal Systems (COSS) by IIIT-Bangalore (EkStep Foundation)",
+    "email": "david@peopleplus.ai",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:17.087089"
+  },
+  {
+    "index": 14,
+    "name": "Parv",
+    "organization": "Chattisgarh State Industrial Development Corporation",
+    "email": "csidc.cg@gov.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:26.906834"
+  },
+  {
+    "index": 15,
+    "name": "Nupura",
+    "organization": "CivicDataLab Private Limited",
+    "email": "design@civicdatalab.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "aspmx3.googlemail.com"
+      ],
+      [
+        10,
+        "aspmx2.googlemail.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:26.907472"
+  },
+  {
+    "index": 16,
+    "name": "Nilesh",
+    "organization": "N9M AI VENTURES",
+    "email": "n.s.kadam@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:26.908582"
+  },
+  {
+    "index": 17,
+    "name": "Maitreyie",
+    "organization": "CloudPe",
+    "email": "marketing@leapswitch.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:26.996974"
+  },
+  {
+    "index": 18,
+    "name": "Gurmeet",
+    "organization": "CommScope Inc",
+    "email": "sgurmeet022@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:27.040061"
+  },
+  {
+    "index": 19,
+    "name": "Kanupriya",
+    "organization": "Constl",
+    "email": "kanupriya.jain@spaceworld.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "spaceworld-in.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:27.378779"
+  },
+  {
+    "index": 20,
+    "name": "Sai",
+    "organization": "Cybersecurity NxxT Private Limited",
+    "email": "sai.sundarakrishna@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:27.379289"
+  },
+  {
+    "index": 21,
+    "name": "Abhishek",
+    "organization": "Dayananda Sagar University",
+    "email": "cmo@dsu.edu.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "aspmx3.googlemail.com"
+      ],
+      [
+        10,
+        "aspmx2.googlemail.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:26:47.454472"
+  },
+  {
+    "index": 22,
+    "name": "Prashant",
+    "organization": "Department of IT & Electronics, Goa",
+    "email": "ceo-sitpc@goa.gov.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:07.106226"
+  },
+  {
+    "index": 23,
+    "name": "K",
+    "organization": "Department of IT, Govt. of Assam",
+    "email": "gopinath.narayan@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:07.989683"
+  },
+  {
+    "index": 24,
+    "name": "Baishali",
+    "organization": "Digital India Bhashini Division",
+    "email": "baishali.dibd@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:09.531681"
+  },
+  {
+    "index": 25,
+    "name": "Sarvjeet",
+    "organization": "DRDO",
+    "email": "cs.sanchit@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:16.974627"
+  },
+  {
+    "index": 26,
+    "name": "Vikash",
+    "organization": "Electronics And Computer Software Export",
+    "email": "vgupta@escindia.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:17.188532"
+  },
+  {
+    "index": 27,
+    "name": "Vikash",
+    "organization": "Electronics And Computer Software Export",
+    "email": "info@escindia.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:17.280915"
+  },
+  {
+    "index": 28,
+    "name": "Mageswar",
+    "organization": "Electronics Corporation Of Tamil Nadu Limited",
+    "email": "vpfacilitation@elcot.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.zoho.in"
+      ],
+      [
+        20,
+        "mx2.zoho.in"
+      ],
+      [
+        50,
+        "mx3.zoho.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:17.438556"
+  },
+  {
+    "index": 29,
+    "name": "IFTEKHAR",
+    "organization": "ERA EDUCATION TRUST",
+    "email": "iftekhar@elmcindia.org",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "elmcindia-org.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:17.481919"
+  },
+  {
+    "index": 30,
+    "name": "CA",
+    "organization": "Unlock Future Fintech Private Limited",
+    "email": "parag@fairvaluation.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        15,
+        "gvy2hzimkqjt4etfrfnmwdlkr26jhwsni3mgauprcpq6ih7wiqua.mx-verification.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:26.972680"
+  },
+  {
+    "index": 31,
+    "name": "Muneender",
+    "organization": "Kenpath Technologies Private Limited",
+    "email": "muneender@kenpath.io",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:37.671156"
+  },
+  {
+    "index": 32,
+    "name": "Maninder",
+    "organization": "Gautam Solar Private Limited",
+    "email": "marketing4@gautamsolar.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "smtp.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:58.067077"
+  },
+  {
+    "index": 33,
+    "name": "Aditi",
+    "organization": "Government of Maharashtra",
+    "email": "sec.it@maharashtra.gov.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:58.093089"
+  },
+  {
+    "index": 34,
+    "name": "Navneet",
+    "organization": "Government of Uttar Pradesh",
+    "email": "navneet.joshi@kpmg.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        2,
+        "mxa-00120b02.gslb.pphosted.com"
+      ],
+      [
+        2,
+        "mxb-00120b02.gslb.pphosted.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:27:59.608579"
+  },
+  {
+    "index": 35,
+    "name": "Haider",
+    "organization": "Government of West Bengal",
+    "email": "director.aicoe@wb.gov.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "wb-gov-in.mail.protection.outlook.com"
+      ],
+      [
+        10,
+        "mail.wb.gov.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:07.038474"
+  },
+  {
+    "index": 36,
+    "name": "Arshi",
+    "organization": "Grand Challenges India - BIRAC",
+    "email": "pmubmgf1.birac@nic.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:07.364088"
+  },
+  {
+    "index": 37,
+    "name": "Rahul",
+    "organization": "Hewlett Packard Enterprise (HPE)",
+    "email": "rahul.luthra@shobizhavas.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mxb-00276502.gslb.pphosted.com"
+      ],
+      [
+        10,
+        "mxa-00276502.gslb.pphosted.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:07.624702"
+  },
+  {
+    "index": 38,
+    "name": "Thangakumar",
+    "organization": "Hindustan Institute Of Technology And Science",
+    "email": "associatedeancs@hindustanuniv.ac.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "mail.hindustanuniv.ac.in"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:07.625256"
+  },
+  {
+    "index": 39,
+    "name": "Nitin",
+    "organization": "HP India",
+    "email": "nitinvinaik@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:08.188028"
+  },
+  {
+    "index": 40,
+    "name": "Yogesh",
+    "organization": "IIT Gandhinagar",
+    "email": "yk.meena@iitgn.ac.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "aspmx.l.google.com"
+      ],
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        20,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        20,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        30,
+        "aspmx2.googlemail.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:17.299690"
+  },
+  {
+    "index": 41,
+    "name": "Dipyaman",
+    "organization": "IIT Kharagpur Ai4icps I Hub Foundation",
+    "email": "ceo@ai4icps.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:18.398564"
+  },
+  {
+    "index": 42,
+    "name": "Vimal",
+    "organization": "iMerit Technology",
+    "email": "vimal.p@imerit.net",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:21.344792"
+  },
+  {
+    "index": 43,
+    "name": "Maj",
+    "organization": "Indian Army (DGIS)",
+    "email": "eswar.creator96@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:28.103537"
+  },
+  {
+    "index": 44,
+    "name": "Archak",
+    "organization": "Indian Institute of Technology Bombay",
+    "email": "archak@iitb.ac.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "fmlr4.iitb.ac.in"
+      ],
+      [
+        10,
+        "fmlr1.iitb.ac.in"
+      ],
+      [
+        10,
+        "fmlr3.iitb.ac.in"
+      ],
+      [
+        10,
+        "fmlr2.iitb.ac.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:28.865384"
+  },
+  {
+    "index": 45,
+    "name": "Sethuram",
+    "organization": "Indian Institute Of Technology Madras",
+    "email": "events@dsai.iitm.ac.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:57.794783"
+  },
+  {
+    "index": 46,
+    "name": "Cmdr.Roopesh",
+    "organization": "Indian Navy",
+    "email": "83aqua@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:57.905242"
+  },
+  {
+    "index": 47,
+    "name": "Shivani",
+    "organization": "INDO GERMAN CHAMBER OF COMMERCE",
+    "email": "shivani.chaturvedi@indo-german.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "indogerman-com01b.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:58.300063"
+  },
+  {
+    "index": 48,
+    "name": "Rajan",
+    "organization": "Indreni Resecurity Pvt. Ltd.",
+    "email": "rajan.pant@resecurity.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "resecurity-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:28:58.421789"
+  },
+  {
+    "index": 49,
+    "name": "Gargi",
+    "organization": "Indus IntelliRisk and IntelliSense Services Pvt Ltd.",
+    "email": "gargi.bhardwaj@iirisconsulting.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "iirisconsulting-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:07.524395"
+  },
+  {
+    "index": 50,
+    "name": "Suyog",
+    "organization": "Infosys Limited",
+    "email": "suyog.shetty@infosys.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "infosyslimited.in.tmes.trendmicro.eu"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:07.565250"
+  },
+  {
+    "index": 51,
+    "name": "Saurabh",
+    "organization": "Innefu Labs Limited",
+    "email": "saurabh.mathur@innefu.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "innefu-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:08.705405"
+  },
+  {
+    "index": 52,
+    "name": "J.P",
+    "organization": "Innovation Hub UP Foundation AKTU",
+    "email": "innovationhub@aktu.ac.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:09.542513"
+  },
+  {
+    "index": 53,
+    "name": "Rohan",
+    "organization": "Integra Micro Systems",
+    "email": "rohanshetty@integramicro.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.zoho.in"
+      ],
+      [
+        20,
+        "mx2.zoho.in"
+      ],
+      [
+        50,
+        "mx3.zoho.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:11.593392"
+  },
+  {
+    "index": 54,
+    "name": "Saloni",
+    "organization": "Shobiz Experiential (Intel)",
+    "email": "salonix.singhal@intel.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        100,
+        "mgamail.eglb.intel.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:18.150403"
+  },
+  {
+    "index": 55,
+    "name": "Rajwant",
+    "organization": "Intellect Design Arena Limited",
+    "email": "rajwant.kaur@intellectdesign.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        2,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        3,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        4,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:28.881718"
+  },
+  {
+    "index": 56,
+    "name": "Aditya",
+    "organization": "Intensity Global Technologies Limited",
+    "email": "aditya@igtpl.co.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "igtpl-co-in.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:29.743364"
+  },
+  {
+    "index": 57,
+    "name": "Sakshi",
+    "organization": "Invincible Ocean",
+    "email": "sakshi@invincibleocean.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "mx1-usg2.ppe-hosted.com"
+      ],
+      [
+        0,
+        "mx3-usg2.ppe-hosted.com"
+      ],
+      [
+        0,
+        "mx2-usg2.ppe-hosted.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:37.982872"
+  },
+  {
+    "index": 58,
+    "name": "Sonali",
+    "organization": "Ishan Infotech Limited",
+    "email": "k.sonali@ishantechnologies.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "ishantechnologies-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:38.960925"
+  },
+  {
+    "index": 59,
+    "name": "Aman",
+    "organization": "Istreet Network Limited",
+    "email": "aman.singh@thirty9studio.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.zoho.in"
+      ],
+      [
+        20,
+        "mx2.zoho.in"
+      ],
+      [
+        50,
+        "mx3.zoho.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:38.964506"
+  },
+  {
+    "index": 60,
+    "name": "Palak",
+    "organization": "Italian Trade Agency (Embassy of Italy)",
+    "email": "p.sahni.ext@ice.it",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "aspmx3.googlemail.com"
+      ],
+      [
+        10,
+        "aspmx2.googlemail.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:47.953821"
+  },
+  {
+    "index": 61,
+    "name": "Archi",
+    "organization": "Haptik",
+    "email": "archi@haptik.co",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:48.032499"
+  },
+  {
+    "index": 62,
+    "name": "Anvita",
+    "organization": "Jio Institute",
+    "email": "anvita.mahajan@ril.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "gwsmtp70.ril.com"
+      ],
+      [
+        1,
+        "gwsmtp30.ril.com"
+      ],
+      [
+        1,
+        "gwjgsmtp90.ril.com"
+      ],
+      [
+        1,
+        "gwjgsmtp60.ril.com"
+      ],
+      [
+        1,
+        "gwhydsmtp20.ril.com"
+      ],
+      [
+        1,
+        "gwsmtp20.ril.com"
+      ],
+      [
+        1,
+        "gwjgsmtp020.ril.com"
+      ],
+      [
+        1,
+        "gwjgsmtp30.ril.com"
+      ],
+      [
+        1,
+        "gwsmtp80.ril.com"
+      ],
+      [
+        1,
+        "gwsmtp050.ril.com"
+      ],
+      [
+        1,
+        "gwsmtp040.ril.com"
+      ],
+      [
+        1,
+        "gwhydsmtp10.ril.com"
+      ],
+      [
+        1,
+        "gwjgsmtp10.ril.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:48.220908"
+  },
+  {
+    "index": 63,
+    "name": "Ruchika",
+    "organization": "Josh Talks Data",
+    "email": "ruchikalalla@joshtalks.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "smtp.google.com"
+      ],
+      [
+        5,
+        "mx1.mailer91.com"
+      ],
+      [
+        10,
+        "inbound-smtp.us-east-1.amazonaws.com"
+      ],
+      [
+        10,
+        "mx2.mailer91.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:29:49.524021"
+  },
+  {
+    "index": 64,
+    "name": "Vinayak",
+    "organization": "Karmayogi Bharat-DoPT",
+    "email": "vinayakyp.kb@karmayogi.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:00.331687"
+  },
+  {
+    "index": 65,
+    "name": "Gurunath",
+    "organization": "Karnataka Pavilion (IT&BT)",
+    "email": "pd-aiml@karnataka.gov.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx1.karnataka.gov.in"
+      ],
+      [
+        20,
+        "mx2.karnataka.gov.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:02.027780"
+  },
+  {
+    "index": 66,
+    "name": "Suneetha",
+    "organization": "N-Kor Private Limited (Kavion.ai)",
+    "email": "suneetha.vegasana@kavion.ai",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "kavion-ai.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:08.655340"
+  },
+  {
+    "index": 67,
+    "name": "Sandip",
+    "organization": "Kerala State IT Mission",
+    "email": "nishanthsr@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:09.368377"
+  },
+  {
+    "index": 68,
+    "name": "Bonny",
+    "organization": "Trestle Labs Private Limited",
+    "email": "bonny@trestlelabs.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.zoho.com"
+      ],
+      [
+        20,
+        "mx2.zoho.com"
+      ],
+      [
+        50,
+        "mx3.zoho.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:19.233820"
+  },
+  {
+    "index": 69,
+    "name": "Trupti",
+    "organization": "Knight Fintech Private Limited",
+    "email": "trupti.suthar@knightfintech.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "smtp.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:23.036022"
+  },
+  {
+    "index": 70,
+    "name": "Sarthak",
+    "organization": "Kreativespace",
+    "email": "sarthak.agarwal@avinyaaedtech.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "smtp.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:29.274349"
+  },
+  {
+    "index": 71,
+    "name": "Tinu",
+    "organization": "Kyndryl Solutions Pvt Ltd",
+    "email": "tinu.thomas@kyndryl.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "mx0b-0066f901.pphosted.com"
+      ],
+      [
+        5,
+        "mx0a-0066f901.pphosted.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:38.330298"
+  },
+  {
+    "index": 72,
+    "name": "Akhilesh",
+    "organization": "Larsen & Toubro Limited",
+    "email": "akhilesh.yadav3@larsentoubro.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "mx1.hc49255.c3s2.iphmx.com"
+      ],
+      [
+        5,
+        "mx2.hc49255.c3s2.iphmx.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:38.971753"
+  },
+  {
+    "index": 73,
+    "name": "Dheeraj",
+    "organization": "Yo Doozy! Media Private Limited",
+    "email": "dheeraj@yodoozymedia.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "mail.yodoozymedia.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:43.216895"
+  },
+  {
+    "index": 74,
+    "name": "Madhusudan",
+    "organization": "Lenovo",
+    "email": "mjorapur@lenovo.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "lenovo-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:49.497731"
+  },
+  {
+    "index": 75,
+    "name": "Saakar",
+    "organization": "Lexlegis Solutions Private Limited",
+    "email": "cmd@lexlegis.ai",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "lexlegis-ai.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:49.647512"
+  },
+  {
+    "index": 76,
+    "name": "Tejasie",
+    "organization": "Linkedin",
+    "email": "temendonca@linkedin.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mail-c.linkedin.com"
+      ],
+      [
+        10,
+        "mail-a.linkedin.com"
+      ],
+      [
+        10,
+        "mail-d.linkedin.com"
+      ],
+      [
+        20,
+        "mail.linkedin.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:50.096780"
+  },
+  {
+    "index": 77,
+    "name": "Sheenu",
+    "organization": "The LNM Institute of Information Technology, Jaipur",
+    "email": "sheenu.jain@lnmiit.ac.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "smtp.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:53.593441"
+  },
+  {
+    "index": 78,
+    "name": "Tanushree",
+    "organization": "Lords Education (Wadhwani AI)",
+    "email": "tanushree@wadhwaniai.org",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:58.705533"
+  },
+  {
+    "index": 79,
+    "name": "Amit",
+    "organization": "Lovely International Trust",
+    "email": "amit.jain1@lpu.co.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "mail.lpu.co.in"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "bulkmail.lpu.co.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:30:59.475485"
+  },
+  {
+    "index": 80,
+    "name": "Awantika",
+    "organization": "MP State Electronics Development Corp",
+    "email": "ipcell-mp@mpsedc.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:00.879410"
+  },
+  {
+    "index": 81,
+    "name": "Varun",
+    "organization": "MasterCard",
+    "email": "varun.sakhuja@mastercard.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mxa-00078002.gslb.pphosted.com"
+      ],
+      [
+        10,
+        "mxb-00078002.gslb.pphosted.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:13.738929"
+  },
+  {
+    "index": 82,
+    "name": "Sushil",
+    "organization": "Meerut Institute of Engineering & Technology",
+    "email": "sushil.sharma@miet.ac.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:19.927255"
+  },
+  {
+    "index": 83,
+    "name": "Debdoot",
+    "organization": "Meesho",
+    "email": "debdoot.mukherjee@meesho.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "aspmx2.googlemail.com"
+      ],
+      [
+        10,
+        "aspmx3.googlemail.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:20.110128"
+  },
+  {
+    "index": 84,
+    "name": "Samadhan",
+    "organization": "Meganet Technologies Global Limited",
+    "email": "samadhan.s@meganet1.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:30.363380"
+  },
+  {
+    "index": 85,
+    "name": "Biren",
+    "organization": "Meghalaya Information Technology Societies",
+    "email": "birentiwari@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:37.353525"
+  },
+  {
+    "index": 86,
+    "name": "Anish",
+    "organization": "MeiTy",
+    "email": "anish.somani@stpi.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:40.120679"
+  },
+  {
+    "index": 87,
+    "name": "Sandeep",
+    "organization": "Microsoft Corporation (India) Private Limited",
+    "email": "saurora@microsoft.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "microsoft-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": true,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:49.197991"
+  },
+  {
+    "index": 88,
+    "name": "Sanjay",
+    "organization": "Netsutra(miiStack)",
+    "email": "sanjay.jindal@netsutra.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        50,
+        "mail1.g9.pair.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:50.742345"
+  },
+  {
+    "index": 89,
+    "name": "Ashish",
+    "organization": "Minaions Private Limited",
+    "email": "ashish@yugasa.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:31:59.862038"
+  },
+  {
+    "index": 90,
+    "name": "Ravi",
+    "organization": "Ministry of Agriculture",
+    "email": "ravir.singh@gov.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:00.990286"
+  },
+  {
+    "index": 91,
+    "name": "Naman",
+    "organization": "Ministry Of Ayush",
+    "email": "ayush-grid@gov.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:01.257368"
+  },
+  {
+    "index": 92,
+    "name": "R",
+    "organization": "Ministry of Earth Sciences (IITM)",
+    "email": "rphani@tropmet.res.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "mx01.logixmx.com"
+      ],
+      [
+        10,
+        "mx02.logixmx.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:01.810894"
+  },
+  {
+    "index": 93,
+    "name": "Shakti",
+    "organization": "Ministry of Education",
+    "email": "bharatinnovates-2026@gov.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:10.273434"
+  },
+  {
+    "index": 94,
+    "name": "Rajalakshmi",
+    "organization": "Ministry of Health & Family Welfare",
+    "email": "rdas@wjcf.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "us-smtp-inbound-1.mimecast.com"
+      ],
+      [
+        2,
+        "us-smtp-inbound-2.mimecast.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:20.856575"
+  },
+  {
+    "index": 95,
+    "name": "Sumit",
+    "organization": "Ministry Of Panchayati Raj",
+    "email": "sumittyagi31@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:22.248636"
+  },
+  {
+    "index": 96,
+    "name": "Rakesh",
+    "organization": "Ministry of Rural Development",
+    "email": "ssglab01@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:27.836658"
+  },
+  {
+    "index": 97,
+    "name": "Neeraj",
+    "organization": "Ministry of Skill Development",
+    "email": "neerajsurendran.dad@hub.nic.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:29.656640"
+  },
+  {
+    "index": 98,
+    "name": "Siddharth",
+    "organization": "Ministry of Steel",
+    "email": "bharat-steel@gov.in",
+    "syntax_valid": true,
+    "domain_exists": false,
+    "mx_found": true,
+    "mx_records": [
+      [
+        10,
+        "mx.mgovcloud.in"
+      ],
+      [
+        20,
+        "mx2.mgovcloud.in"
+      ],
+      [
+        50,
+        "mx3.mgovcloud.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 10,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:39.432384"
+  },
+  {
+    "index": 99,
+    "name": "Shuhrat",
+    "organization": "Ministry of Tajikistan (Zypl Holding)",
+    "email": "shuhrat@qulla.ai",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:40.412303"
+  },
+  {
+    "index": 100,
+    "name": "Mithun",
+    "organization": "Ministry of Tribal Affairs",
+    "email": "mithun.c2191@gmail.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "gmail-smtp-in.l.google.com"
+      ],
+      [
+        10,
+        "alt1.gmail-smtp-in.l.google.com"
+      ],
+      [
+        20,
+        "alt2.gmail-smtp-in.l.google.com"
+      ],
+      [
+        30,
+        "alt3.gmail-smtp-in.l.google.com"
+      ],
+      [
+        40,
+        "alt4.gmail-smtp-in.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": true,
+    "role_based": false,
+    "risk_level": "HIGH",
+    "risk_score": 7,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:32:50.163341"
+  },
+  {
+    "index": 101,
+    "name": "Vinayak",
+    "organization": "Mio AI (NoPaperForms)",
+    "email": "vinayak.s@meritto.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:01.160853"
+  },
+  {
+    "index": 102,
+    "name": "PANKAJ",
+    "organization": "Mirror Security Private Limited",
+    "email": "pankaj@mirrorsecurity.io",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "mirrorsecurity-io.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:01.321258"
+  },
+  {
+    "index": 103,
+    "name": "Aditya",
+    "organization": "MobilePe Fintech Private Limited",
+    "email": "alliances@mobilepefintech.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "mobilepefintech-com.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": true,
+    "risk_level": "HIGH",
+    "risk_score": 8,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:10.331775"
+  },
+  {
+    "index": 104,
+    "name": "Hena",
+    "organization": "Nasscom",
+    "email": "hena@nasscom.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        0,
+        "nasscom-in.mail.protection.outlook.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:12.379359"
+  },
+  {
+    "index": 105,
+    "name": "Aakash",
+    "organization": "National Payments Corporation Of India (NPCI)",
+    "email": "aakash.poojary@npci.org.in",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "mh4.npci.org.in"
+      ],
+      [
+        5,
+        "mh2.npci.org.in"
+      ],
+      [
+        10,
+        "mh1.npci.org.in"
+      ],
+      [
+        10,
+        "mh3.npci.org.in"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:17.966276"
+  },
+  {
+    "index": 106,
+    "name": "Divya",
+    "organization": "NCPEDP",
+    "email": "divya_george@ncpedp.org",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        5,
+        "mx1.hostinger.com"
+      ],
+      [
+        10,
+        "mx2.hostinger.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:29.969993"
+  },
+  {
+    "index": 107,
+    "name": "Shashwat",
+    "organization": "Neevai Supercloud Private Limited",
+    "email": "sj@neevcloud.com",
+    "syntax_valid": true,
+    "domain_exists": true,
+    "mx_found": true,
+    "mx_records": [
+      [
+        1,
+        "aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt1.aspmx.l.google.com"
+      ],
+      [
+        5,
+        "alt2.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt4.aspmx.l.google.com"
+      ],
+      [
+        10,
+        "alt3.aspmx.l.google.com"
+      ]
+    ],
+    "smtp_response": "",
+    "mailbox_valid": null,
+    "catch_all_domain": false,
+    "disposable": false,
+    "free_provider": false,
+    "role_based": false,
+    "risk_level": "MEDIUM",
+    "risk_score": 5,
+    "error_message": "All MX servers unreachable",
+    "verified_at": "2026-08-08T11:33:31.007843"
+  }
+]

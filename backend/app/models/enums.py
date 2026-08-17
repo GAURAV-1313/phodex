@@ -27,3 +27,12 @@ class ApprovalStatus(StrEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     EXPIRED = "expired"
+
+
+class GitOperationStatus(StrEnum):
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    REJECTED = "rejected"

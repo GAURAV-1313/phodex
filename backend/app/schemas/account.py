@@ -9,6 +9,8 @@ from app.schemas.auth import UserOut
 class AccountSummaryResponse(BaseModel):
     user: UserOut
     active_sessions: int
+    device_online: bool
+    device_last_seen_at: datetime | None
     generated_at: datetime
 
 

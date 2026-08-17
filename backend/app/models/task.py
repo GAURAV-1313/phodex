@@ -43,3 +43,6 @@ class Task(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         "ApprovalRequest", back_populates="task", cascade="all,delete-orphan"
     )
     artifacts = relationship("Artifact", back_populates="task", cascade="all,delete-orphan")
+    git_operations = relationship(
+        "GitOperation", back_populates="task", cascade="all,delete-orphan"
+    )

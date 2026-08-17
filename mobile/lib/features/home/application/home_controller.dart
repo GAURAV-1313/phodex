@@ -23,6 +23,20 @@ class HomeTasksController extends AsyncNotifier<List<TaskSummary>> {
     });
   }
 
+  /// Re-fetches without the [AsyncLoading] flash `refresh` does — for
+  /// silently catching up on status changes (e.g. a task finishing while
+  /// the user was elsewhere) when a screen that reads this list reappears,
+  /// where swapping the whole list out for a spinner would be jarring.
+  Future<void> revalidate() async {
+    final taskRepository = ref.read(taskRepositoryProvider);
+    try {
+      final tasks = await taskRepository.listTasks();
+      state = AsyncData(tasks);
+    } catch (_) {
+      // Keep showing the last known list on a transient failure.
+    }
+  }
+
   Future<TaskSummary> createTask(String prompt) async {
     final taskRepository = ref.read(taskRepositoryProvider);
     final context = ref.read(selectedProjectContextProvider).asData?.value;

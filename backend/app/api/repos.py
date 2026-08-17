@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
@@ -13,7 +13,6 @@ from app.schemas.repos import (
     RepoSyncResponse,
     SyncedRepositoryOut,
 )
-from app.services.exceptions import NotFoundError
 from app.services.service_registry import ServiceRegistry
 
 router = APIRouter(prefix="/repos", tags=["repos"])
@@ -25,11 +24,7 @@ async def sync_repositories(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> RepoSyncResponse:
-    try:
-        repos = await services.repo_sync_service.sync_repositories(current_user.id, payload)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    repos = await services.repo_sync_service.sync_repositories(current_user.id, payload)
     return RepoSyncResponse(
         synced_count=len(repos),
         items=[SyncedRepositoryOut.model_validate(repo) for repo in repos],
@@ -51,11 +46,7 @@ async def get_repository(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> SyncedRepositoryOut:
-    try:
-        repo = await services.repo_sync_service.get_repository(current_user.id, repo_id)
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
+    repo = await services.repo_sync_service.get_repository(current_user.id, repo_id)
     return SyncedRepositoryOut.model_validate(repo)
 
 
@@ -66,14 +57,11 @@ async def select_repository(
     services: Annotated[ServiceRegistry, Depends(get_services)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> RepoSelectResponse:
-    try:
-        context = await services.repo_sync_service.select_repository(
-            current_user.id,
-            repo_id,
-            name=payload.name,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    context = await services.repo_sync_service.select_repository(
+        current_user.id,
+        repo_id,
+        name=payload.name,
+    )
 
     from app.schemas.repos import ProjectContextOut
 

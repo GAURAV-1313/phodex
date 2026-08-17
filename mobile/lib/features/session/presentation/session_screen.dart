@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile/core/domain/models/models.dart';
+import 'package:mobile/core/providers/repository_providers.dart';
 import 'package:mobile/features/session/application/session_controller.dart';
 import 'package:mobile/features/session/application/session_state.dart';
 import 'package:mobile/shared/theme/theme.dart';
+import 'package:mobile/shared/widgets/issue_card.dart';
+import 'package:mobile/shared/widgets/phodex_mascot.dart';
+import 'package:mobile/shared/widgets/stagger_in.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
 
 class SessionScreen extends ConsumerWidget {
@@ -27,10 +32,27 @@ class SessionScreen extends ConsumerWidget {
                 ref.read(sessionProvider(taskId).notifier).cancelTask(),
             onReply: (message) =>
                 ref.read(sessionProvider(taskId).notifier).sendReply(message),
+            onPrepareCommit: () =>
+                ref.read(gitOpsRepositoryProvider).prepareCommit(
+                  taskId: taskId,
+                ),
+            onConfirmCommit: (gitOperationId, commitMessage) =>
+                ref.read(gitOpsRepositoryProvider).confirmCommit(
+                  taskId: taskId,
+                  gitOperationId: gitOperationId,
+                  commitMessage: commitMessage,
+                ),
+            onDiscardCommit: (gitOperationId) =>
+                ref.read(gitOpsRepositoryProvider).discardCommit(
+                  taskId: taskId,
+                  gitOperationId: gitOperationId,
+                ),
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) =>
-              Center(child: Text('Could not load task: $error')),
+          loading: () => const PhodexLoading(),
+          error: (error, _) => StitchErrorState(
+            title: "Couldn't load this task",
+            onRetry: () => ref.invalidate(sessionProvider(taskId)),
+          ),
         ),
       ),
     );
@@ -44,22 +66,58 @@ class _ExecutionView extends StatefulWidget {
     required this.onReject,
     required this.onCancel,
     required this.onReply,
+    required this.onPrepareCommit,
+    required this.onConfirmCommit,
+    required this.onDiscardCommit,
   });
   final SessionUiState session;
   final ValueChanged<String> onApprove;
   final ValueChanged<String> onReject;
   final VoidCallback onCancel;
   final ValueChanged<String> onReply;
+  final Future<GitOperation> Function() onPrepareCommit;
+  final Future<GitOperation> Function(String gitOperationId, String commitMessage)
+  onConfirmCommit;
+  final Future<GitOperation> Function(String gitOperationId) onDiscardCommit;
   @override
   State<_ExecutionView> createState() => _ExecutionViewState();
 }
 
 class _ExecutionViewState extends State<_ExecutionView> {
   final _reply = TextEditingController();
+  bool _preparingCommit = false;
   @override
   void dispose() {
     _reply.dispose();
     super.dispose();
+  }
+
+  Future<void> _startCommitFlow(BuildContext context) async {
+    setState(() => _preparingCommit = true);
+    GitOperation operation;
+    try {
+      operation = await widget.onPrepareCommit();
+    } catch (e) {
+      if (!context.mounted) return;
+      setState(() => _preparingCommit = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not prepare commit: $e')),
+      );
+      return;
+    }
+    if (!context.mounted) return;
+    setState(() => _preparingCommit = false);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CommitPushSheet(
+        operation: operation,
+        onConfirm: widget.onConfirmCommit,
+        onDiscard: widget.onDiscardCommit,
+      ),
+    );
   }
 
   @override
@@ -83,21 +141,18 @@ class _ExecutionViewState extends State<_ExecutionView> {
               icon: const Icon(Icons.chevron_left_rounded, size: 34),
             ),
             const Spacer(),
-            const Text(
-              'Phodex',
-              style: TextStyle(fontSize: 27, fontWeight: FontWeight.w700),
-            ),
-            const Spacer(),
             IconButton(
               onPressed: () => _showLogs(context),
               icon: const Icon(Icons.terminal_rounded),
             ),
           ],
         ),
-        const SizedBox(height: 45),
+        const SizedBox(height: 32),
         Center(
           child: Column(
             children: [
+              PhodexMascot(size: 64, mood: moodForTaskStatus(task.status)),
+              const SizedBox(height: 18),
               Text(
                 complete ? task.status.value.toUpperCase() : 'EXECUTION LIVE',
                 style: TextStyle(
@@ -112,11 +167,7 @@ class _ExecutionViewState extends State<_ExecutionView> {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 25,
-                  height: 1.2,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppTypography.display(fontSize: 24, height: 1.2),
               ),
               const SizedBox(height: 10),
               Text(
@@ -132,8 +183,11 @@ class _ExecutionViewState extends State<_ExecutionView> {
         ),
         const SizedBox(height: 42),
         if (!complete) const LinearProgressIndicator(),
-        const SizedBox(height: 42),
-        _Timeline(events: widget.session.events),
+        const SizedBox(height: 34),
+        _Timeline(
+          events: widget.session.events,
+          onShowAll: () => _showLogs(context),
+        ),
         if (approval != null)
           Padding(
             padding: const EdgeInsets.only(top: 26),
@@ -146,13 +200,68 @@ class _ExecutionViewState extends State<_ExecutionView> {
           ),
         if (complete)
           _CompletionCard(task: task, messages: widget.session.messages),
+        if (complete && widget.session.issues.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Column(
+              children: [
+                for (final issue in widget.session.issues)
+                  IssueCard(issue: issue),
+              ],
+            ),
+          ),
         const SizedBox(height: 36),
-        StitchPrimaryButton(
-          label: complete ? 'Done' : 'View terminal logs',
-          icon: complete ? null : Icons.terminal_rounded,
-          onPressed: () =>
-              complete ? context.go('/activity') : _showLogs(context),
-        ),
+        if (complete && task.status == TaskStatus.completed) ...[
+          SizedBox(
+            height: 56,
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _preparingCommit
+                  ? null
+                  : () => _startCommitFlow(context),
+              icon: _preparingCommit
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_rounded, size: 18),
+              label: Text(
+                _preparingCommit ? 'Checking for changes…' : 'Commit & Push',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.accentPrimary,
+                side: const BorderSide(color: AppColors.accentPrimary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (complete)
+          StitchPrimaryButton(
+            label: 'Done',
+            onPressed: () => context.go('/activity'),
+          )
+        else
+          SizedBox(
+            height: 50,
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showLogs(context),
+              icon: const Icon(Icons.terminal_rounded, size: 18),
+              label: const Text('View terminal logs'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                side: const BorderSide(color: AppColors.borderSubtle),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
         if (!complete) ...[
           TextButton(
             onPressed: widget.onCancel,
@@ -210,28 +319,117 @@ class _ExecutionViewState extends State<_ExecutionView> {
   );
 }
 
+(IconData, Color) _timelineIconFor(String eventType) => switch (eventType) {
+  'task.starting' => (
+    Icons.play_circle_outline_rounded,
+    AppColors.accentPrimary,
+  ),
+  'task.running' => (Icons.autorenew_rounded, AppColors.accentPrimary),
+  'task.completed' => (Icons.check_circle_rounded, AppColors.accentSuccess),
+  'task.failed' => (Icons.error_rounded, AppColors.accentError),
+  'task.cancelled' => (Icons.stop_circle_rounded, AppColors.textMuted),
+  'task.progress' => (Icons.circle, AppColors.textMuted),
+  'git.started' => (Icons.upload_rounded, AppColors.accentPrimary),
+  'git.completed' => (Icons.check_circle_rounded, AppColors.accentSuccess),
+  'git.failed' => (Icons.error_rounded, AppColors.accentError),
+  'git.discarded' => (Icons.stop_circle_rounded, AppColors.textMuted),
+  _ => (Icons.circle, AppColors.textMuted),
+};
+
+String _capitalize(String value) =>
+    value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
+
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.events});
+  const _Timeline({required this.events, required this.onShowAll});
   final List<TaskEventEnvelope> events;
+  final VoidCallback onShowAll;
+
+  static const int _visibleCap = 6;
+
   @override
   Widget build(BuildContext context) {
-    final steps = events
-        .where((event) => event.type != 'task.log')
-        .take(6)
-        .toList();
+    final steps = events.where((event) => event.type != 'task.log').toList();
+    final visible = steps.take(_visibleCap).toList();
+    final remaining = steps.length - visible.length;
+    final timeFormat = DateFormat.Hm();
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final event in steps)
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.accentPrimary,
-              child: const Icon(Icons.check_rounded, color: Colors.white),
+        for (final (i, event) in visible.indexed)
+          StaggerIn(
+            key: ValueKey(event.eventId),
+            index: i,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Builder(
+                    builder: (context) {
+                      final (icon, color) = _timelineIconFor(event.type);
+                      final isDot =
+                          event.type == 'task.progress' ||
+                          !{
+                            'task.starting',
+                            'task.running',
+                            'task.completed',
+                            'task.failed',
+                            'task.cancelled',
+                            'git.started',
+                            'git.completed',
+                            'git.failed',
+                            'git.discarded',
+                          }.contains(event.type);
+                      return Container(
+                        width: 22,
+                        height: 22,
+                        alignment: Alignment.center,
+                        child: Icon(icon, size: isDot ? 8 : 18, color: color),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _capitalize(
+                        event.data['message']?.toString() ??
+                            event.type.replaceAll('.', ' '),
+                      ),
+                      style: const TextStyle(fontSize: 15.5, height: 1.35),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    timeFormat.format(event.timestamp.toLocal()),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            title: Text(
-              event.data['message']?.toString() ??
-                  event.type.replaceAll('.', ' '),
+          ),
+        if (remaining > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 34),
+            child: TextButton(
+              onPressed: onShowAll,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                alignment: Alignment.centerLeft,
+              ),
+              child: Text(
+                '+$remaining more steps',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accentPrimary,
+                ),
+              ),
             ),
-            subtitle: const Text('Execution event'),
           ),
       ],
     );
@@ -272,10 +470,7 @@ class _ApprovalBlock extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             '\$ $command',
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              color: AppColors.accentPrimary,
-            ),
+            style: AppTypography.code(color: AppColors.accentPrimary),
           ),
           const SizedBox(height: 18),
           Text(
@@ -300,6 +495,187 @@ class _ApprovalBlock extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommitPushSheet extends StatefulWidget {
+  const _CommitPushSheet({
+    required this.operation,
+    required this.onConfirm,
+    required this.onDiscard,
+  });
+  final GitOperation operation;
+  final Future<GitOperation> Function(String gitOperationId, String commitMessage)
+  onConfirm;
+  final Future<GitOperation> Function(String gitOperationId) onDiscard;
+
+  @override
+  State<_CommitPushSheet> createState() => _CommitPushSheetState();
+}
+
+class _CommitPushSheetState extends State<_CommitPushSheet> {
+  late final _message = TextEditingController(
+    text: widget.operation.commitMessage,
+  );
+  late GitOperation _operation = widget.operation;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _message.dispose();
+    super.dispose();
+  }
+
+  bool get _resolved =>
+      _operation.status == GitOperationStatus.completed ||
+      _operation.status == GitOperationStatus.failed;
+
+  Future<void> _confirm() async {
+    setState(() => _busy = true);
+    try {
+      final resolved = await widget.onConfirm(
+        _operation.id,
+        _message.text.trim(),
+      );
+      setState(() {
+        _operation = resolved;
+        _busy = false;
+      });
+    } catch (e) {
+      setState(() => _busy = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Commit & push failed: $e')));
+    }
+  }
+
+  Future<void> _discard() async {
+    setState(() => _busy = true);
+    await widget.onDiscard(_operation.id);
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.borderSubtle,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (_resolved) ...[
+            Icon(
+              _operation.status == GitOperationStatus.completed
+                  ? Icons.check_circle
+                  : Icons.error_outline,
+              size: 48,
+              color: _operation.status == GitOperationStatus.completed
+                  ? AppColors.accentSuccess
+                  : AppColors.accentError,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              _operation.status == GitOperationStatus.completed
+                  ? 'Pushed to GitHub'
+                  : "Couldn't push",
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+            if (_operation.errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _operation.errorMessage!,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+            const SizedBox(height: 22),
+            SizedBox(
+              width: double.infinity,
+              child: StitchPrimaryButton(
+                label: 'Close',
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ] else ...[
+            const Text(
+              'Commit & push to GitHub',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _message,
+              decoration: const InputDecoration(labelText: 'Commit message'),
+            ),
+            const SizedBox(height: 16),
+            if ((_operation.statusOutput ?? '').isNotEmpty) ...[
+              const Text(
+                'CHANGES',
+                style: TextStyle(
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxHeight: 160),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.bgInput,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    _operation.statusOutput ?? '',
+                    style: AppTypography.code(fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _busy ? null : _discard,
+                    child: const Text('Discard'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _busy ? null : _confirm,
+                    child: Text(_busy ? 'Pushing…' : 'Commit & push'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -386,10 +762,7 @@ class _LogsSheet extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
                       log.data['message']?.toString() ?? log.type,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        color: Color(0xFFD5D5D5),
-                      ),
+                      style: AppTypography.code(color: const Color(0xFFD5D5D5)),
                     ),
                   ),
               ],

@@ -49,17 +49,23 @@ class AccountSummaryResponseDto {
   const AccountSummaryResponseDto({
     required this.user,
     required this.activeSessions,
+    required this.deviceOnline,
+    required this.deviceLastSeenAt,
     required this.generatedAt,
   });
 
   final UserOutDto user;
   final int activeSessions;
+  final bool deviceOnline;
+  final DateTime? deviceLastSeenAt;
   final DateTime generatedAt;
 
   factory AccountSummaryResponseDto.fromJson(Map<String, dynamic> json) {
     return AccountSummaryResponseDto(
       user: UserOutDto.fromJson(json['user'] as Map<String, dynamic>),
       activeSessions: json['active_sessions'] as int,
+      deviceOnline: json['device_online'] as bool? ?? false,
+      deviceLastSeenAt: parseNullableDateTime(json['device_last_seen_at']),
       generatedAt: parseDateTime(json['generated_at']),
     );
   }
@@ -68,6 +74,8 @@ class AccountSummaryResponseDto {
     return AccountSummary(
       user: user.toDomain(),
       activeSessions: activeSessions,
+      deviceOnline: deviceOnline,
+      deviceLastSeenAt: deviceLastSeenAt,
       generatedAt: generatedAt,
     );
   }

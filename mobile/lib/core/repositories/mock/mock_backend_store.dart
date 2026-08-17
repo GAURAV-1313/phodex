@@ -20,6 +20,11 @@ class MockBackendStore {
       <String, List<TaskIssue>>{};
   final Map<String, ApprovalRequest> _approvalsById =
       <String, ApprovalRequest>{};
+  final Map<String, GitOperation> _gitOperationsById = <String, GitOperation>{};
+  AiSettingsStatus _aiSettings = const AiSettingsStatus(
+    hasAnthropicKey: false,
+    hasOpenaiKey: false,
+  );
   final Map<String, StreamController<TaskEventEnvelope>> _eventControllers =
       <String, StreamController<TaskEventEnvelope>>{};
 
@@ -263,6 +268,87 @@ class MockBackendStore {
     return resolved;
   }
 
+  GitOperation prepareCommit(String taskId) {
+    final task = _tasks[taskId];
+    if (task == null) {
+      throw StateError('Task not found');
+    }
+    final operation = GitOperation(
+      id: _nextId('git_op'),
+      taskId: taskId,
+      repoPath: '/mock/repo',
+      commitMessage: 'Phodex: ${task.title ?? task.prompt}',
+      status: GitOperationStatus.pendingReview,
+      statusOutput: ' M lib/example.dart\n?? lib/new_file.dart',
+      diffStatOutput: ' lib/example.dart | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)',
+    );
+    _gitOperationsById[operation.id] = operation;
+    return operation;
+  }
+
+  GitOperation confirmCommit(
+    String taskId,
+    String gitOperationId, {
+    String? commitMessage,
+  }) {
+    final operation = _gitOperationsById[gitOperationId];
+    if (operation == null || operation.taskId != taskId) {
+      throw StateError('Git operation not found');
+    }
+    if (operation.status != GitOperationStatus.pendingReview) {
+      throw StateError('Git operation already resolved');
+    }
+    final resolved = operation.copyWith(
+      commitMessage: commitMessage ?? operation.commitMessage,
+      status: GitOperationStatus.completed,
+    );
+    _gitOperationsById[gitOperationId] = resolved;
+    _emitEvent(
+      taskId: taskId,
+      type: 'git.completed',
+      data: {'message': 'Changes committed and pushed successfully.'},
+    );
+    return resolved;
+  }
+
+  GitOperation discardCommit(String taskId, String gitOperationId) {
+    final operation = _gitOperationsById[gitOperationId];
+    if (operation == null || operation.taskId != taskId) {
+      throw StateError('Git operation not found');
+    }
+    final resolved = operation.copyWith(status: GitOperationStatus.rejected);
+    _gitOperationsById[gitOperationId] = resolved;
+    _emitEvent(
+      taskId: taskId,
+      type: 'git.discarded',
+      data: {'message': 'Commit & push discarded by user'},
+    );
+    return resolved;
+  }
+
+  AiSettingsStatus getAiSettingsStatus() => _aiSettings;
+
+  AiSettingsStatus updateAiSettings({
+    String? anthropicApiKey,
+    String? openaiApiKey,
+    bool clearAnthropicKey = false,
+    bool clearOpenaiKey = false,
+    String? preferredClaudeModel,
+    String? preferredCodexModel,
+  }) {
+    _aiSettings = AiSettingsStatus(
+      hasAnthropicKey: clearAnthropicKey
+          ? false
+          : (anthropicApiKey?.isNotEmpty ?? _aiSettings.hasAnthropicKey),
+      hasOpenaiKey: clearOpenaiKey
+          ? false
+          : (openaiApiKey?.isNotEmpty ?? _aiSettings.hasOpenaiKey),
+      preferredClaudeModel: preferredClaudeModel ?? _aiSettings.preferredClaudeModel,
+      preferredCodexModel: preferredCodexModel ?? _aiSettings.preferredCodexModel,
+    );
+    return _aiSettings;
+  }
+
   List<SyncedRepository> listRepositories() {
     return List<SyncedRepository>.unmodifiable(_repositories);
   }
@@ -299,6 +385,8 @@ class MockBackendStore {
     return AccountSummary(
       user: _user,
       activeSessions: 1,
+      deviceOnline: true,
+      deviceLastSeenAt: DateTime.now().toUtc(),
       generatedAt: DateTime.now().toUtc(),
     );
   }

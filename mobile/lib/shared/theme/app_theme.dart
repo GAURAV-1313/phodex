@@ -18,7 +18,6 @@ class AppTheme {
         error: AppColors.accentError,
       ),
       textTheme: AppTypography.textTheme,
-      fontFamily: 'Inter',
     );
 
     return base.copyWith(

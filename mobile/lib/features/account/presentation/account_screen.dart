@@ -19,12 +19,20 @@ class AccountScreen extends ConsumerWidget {
         child: value.when(
           data: (dashboard) {
             final user = dashboard.summary.user;
-            final runtimeLive = dashboard.summary.activeSessions > 0;
+            final runtimeLive = dashboard.summary.deviceOnline;
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, stitchDockClearance),
               children: [
-                const StitchHeader(title: 'Phodex'),
-                const SizedBox(height: 54),
+                StitchHeader(onBell: () => context.push('/approvals')),
+                const SizedBox(height: 44),
+                Text(
+                  'Account',
+                  style: AppTypography.display(
+                    fontSize: AppTypeScale.displayLarge,
+                    letterSpacing: -1,
+                  ),
+                ),
+                const SizedBox(height: 28),
                 const CircleAvatar(
                   radius: 52,
                   backgroundColor: AppColors.bgInput,
@@ -61,15 +69,15 @@ class AccountScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       Text(
                         '${dashboard.usage.totalTasks}',
-                        style: const TextStyle(
-                          fontSize: 40,
+                        style: AppTypography.display(
+                          fontSize: AppTypeScale.displayLarge,
                           letterSpacing: -1,
                           color: AppColors.accentPrimary,
                         ),
                       ),
                       const Text(
                         'Automated tasks',
-                        style: TextStyle(fontSize: 17),
+                        style: TextStyle(fontSize: AppTypeScale.body),
                       ),
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 22),
@@ -151,21 +159,42 @@ class AccountScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 StitchCard(
                   padding: EdgeInsets.zero,
-                  child: const Column(
+                  child: Column(
                     children: [
+                      _Setting(
+                        icon: Icons.smart_toy_outlined,
+                        label: 'AI engine',
+                        onTap: () => context.push('/account/ai-engine'),
+                      ),
+                      const Divider(height: 1),
                       _Setting(
                         icon: Icons.notifications_none_rounded,
                         label: 'Notifications',
+                        onTap: () => _showComingSoon(
+                          context,
+                          'Notifications',
+                          'Push notification preferences aren\'t wired up yet — pending approvals still show live via the bell icon.',
+                        ),
                       ),
-                      Divider(height: 1),
+                      const Divider(height: 1),
                       _Setting(
                         icon: Icons.palette_outlined,
                         label: 'Appearance',
+                        onTap: () => _showComingSoon(
+                          context,
+                          'Appearance',
+                          'Dark mode isn\'t built yet — Phodex currently ships with one considered light theme.',
+                        ),
                       ),
-                      Divider(height: 1),
+                      const Divider(height: 1),
                       _Setting(
                         icon: Icons.lock_outline,
                         label: 'Privacy & security',
+                        onTap: () => _showComingSoon(
+                          context,
+                          'Privacy & security',
+                          'Session management and data controls are coming in a future update.',
+                        ),
                       ),
                     ],
                   ),
@@ -173,9 +202,14 @@ class AccountScreen extends ConsumerWidget {
                 const SizedBox(height: 26),
                 StitchCard(
                   padding: EdgeInsets.zero,
-                  child: const _Setting(
+                  child: _Setting(
                     icon: Icons.help_outline,
                     label: 'Support center',
+                    onTap: () => _showComingSoon(
+                      context,
+                      'Support center',
+                      'No support channel is configured yet. For now, reach out to whoever runs your Phodex backend.',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 34),
@@ -204,9 +238,11 @@ class AccountScreen extends ConsumerWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) =>
-              Center(child: Text('Could not load account: $error')),
+          loading: () => const PhodexLoading(),
+          error: (error, _) => StitchErrorState(
+            title: "Couldn't load your account",
+            onRetry: () => ref.read(accountDashboardProvider.notifier).refresh(),
+          ),
         ),
       ),
     );
@@ -225,27 +261,80 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _Setting extends StatelessWidget {
-  const _Setting({required this.icon, required this.label});
+  const _Setting({required this.icon, required this.label, this.onTap});
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.bgInput,
-            borderRadius: BorderRadius.circular(12),
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.bgInput,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon),
           ),
-          child: Icon(icon),
-        ),
-        const SizedBox(width: 16),
-        Expanded(child: Text(label, style: const TextStyle(fontSize: 17))),
-        const Icon(Icons.chevron_right, color: AppColors.textMuted),
-      ],
+          const SizedBox(width: 16),
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 17))),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showComingSoon(BuildContext context, String title, String message) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.borderSubtle,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          StitchPrimaryButton(
+            label: 'Got it',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
     ),
   );
 }

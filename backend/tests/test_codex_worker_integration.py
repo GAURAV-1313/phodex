@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import Settings
 from app.main import create_app
-from app.workers.codex_worker import CodexWorkerEngine
+from app.workers.codex.output_parser import is_blocked_outcome
 
 
 def _write_stub_runtime(script_path) -> None:
@@ -131,6 +131,6 @@ async def test_codex_worker_executes_runtime_after_approval(codex_client: AsyncC
 
 
 def test_codex_worker_recognizes_explicit_blocked_outcomes():
-    assert CodexWorkerEngine._is_blocked_outcome("OUTCOME: BLOCKED\nDocker is unavailable.")
-    assert CodexWorkerEngine._is_blocked_outcome("Operational log — **BLOCKED**")
-    assert not CodexWorkerEngine._is_blocked_outcome("OUTCOME: COMPLETED")
+    assert is_blocked_outcome("OUTCOME: BLOCKED\nDocker is unavailable.")
+    assert is_blocked_outcome("Operational log — **BLOCKED**")
+    assert not is_blocked_outcome("OUTCOME: COMPLETED")

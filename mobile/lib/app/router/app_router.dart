@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/app/router/page_transitions.dart';
 import 'package:mobile/features/account/presentation/account_screen.dart';
+import 'package:mobile/features/ai_engine/presentation/ai_engine_screen.dart';
 import 'package:mobile/features/approvals/presentation/approvals_screen.dart';
 import 'package:mobile/features/home/presentation/home_screen.dart';
 import 'package:mobile/features/home/presentation/recents_screen.dart';
@@ -15,53 +17,60 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/welcome',
         name: 'welcome',
-        builder: (context, state) => const WelcomeScreen(),
+        pageBuilder: (context, state) =>
+            fadeThroughPage(const WelcomeScreen(), state),
       ),
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
-        routes: [
-          GoRoute(
-            path: 'recents',
-            name: 'recents',
-            builder: (context, state) => const RecentsScreen(),
-          ),
-        ],
+        pageBuilder: (context, state) =>
+            fadeThroughPage(const HomeScreen(), state),
       ),
       GoRoute(
         path: '/session/:taskId',
         name: 'session',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final taskId = state.pathParameters['taskId']!;
-          return SessionScreen(taskId: taskId);
+          return slideUpPage(SessionScreen(taskId: taskId), state);
         },
       ),
       GoRoute(
         path: '/repos',
         name: 'repos',
-        builder: (context, state) => const ReposScreen(),
+        pageBuilder: (context, state) =>
+            fadeThroughPage(const ReposScreen(), state),
       ),
       GoRoute(
         path: '/repos/:repoId',
         name: 'repo-detail',
-        builder: (context, state) =>
-            RepositoryDetailScreen(repoId: state.pathParameters['repoId']!),
+        pageBuilder: (context, state) => slideUpPage(
+          RepositoryDetailScreen(repoId: state.pathParameters['repoId']!),
+          state,
+        ),
       ),
       GoRoute(
         path: '/activity',
         name: 'activity',
-        builder: (context, state) => const RecentsScreen(),
+        pageBuilder: (context, state) =>
+            fadeThroughPage(const RecentsScreen(), state),
       ),
       GoRoute(
         path: '/approvals',
         name: 'approvals',
-        builder: (context, state) => const ApprovalsScreen(),
+        pageBuilder: (context, state) =>
+            slideUpPage(const ApprovalsScreen(), state),
       ),
       GoRoute(
         path: '/account',
         name: 'account',
-        builder: (context, state) => const AccountScreen(),
+        pageBuilder: (context, state) =>
+            fadeThroughPage(const AccountScreen(), state),
+      ),
+      GoRoute(
+        path: '/account/ai-engine',
+        name: 'ai-engine',
+        pageBuilder: (context, state) =>
+            slideUpPage(const AiEngineScreen(), state),
       ),
     ],
   );

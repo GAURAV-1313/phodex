@@ -1,7 +1,9 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_SUPPORTED_WORKER_ENGINES = {"fake", "codex", "claude"}
 
 
 class Settings(BaseSettings):
@@ -45,11 +47,24 @@ class Settings(BaseSettings):
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
     allow_insecure_test_tokens: bool = Field(default=False, alias="ALLOW_INSECURE_TEST_TOKENS")
 
+    settings_encryption_key: str | None = Field(default=None, alias="SETTINGS_ENCRYPTION_KEY")
+
     auto_create_schema: bool = Field(default=False, alias="AUTO_CREATE_SCHEMA")
     fake_worker_step_delay_seconds: float = Field(
         default=0.35, alias="FAKE_WORKER_STEP_DELAY_SECONDS"
     )
     worker_engine: str = Field(default="fake", alias="WORKER_ENGINE")
+
+    @field_validator("worker_engine")
+    @classmethod
+    def _normalize_worker_engine(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in _SUPPORTED_WORKER_ENGINES:
+            raise ValueError(
+                f"Unsupported WORKER_ENGINE='{value}'. "
+                f"Use one of: {', '.join(sorted(_SUPPORTED_WORKER_ENGINES))}."
+            )
+        return normalized
 
     codex_command: str = Field(default="codex", alias="CODEX_COMMAND")
     codex_args: str = Field(default="", alias="CODEX_ARGS")
@@ -62,6 +77,20 @@ class Settings(BaseSettings):
         default="medium", alias="CODEX_INITIAL_APPROVAL_RISK_LEVEL"
     )
     codex_default_workdir: str | None = Field(default=None, alias="CODEX_DEFAULT_WORKDIR")
+
+    claude_command: str = Field(default="claude", alias="CLAUDE_COMMAND")
+    claude_extra_args: str = Field(default="", alias="CLAUDE_EXTRA_ARGS")
+    claude_permission_mode: str = Field(
+        default="bypassPermissions", alias="CLAUDE_PERMISSION_MODE"
+    )
+    claude_timeout_seconds: float = Field(default=1800.0, alias="CLAUDE_TIMEOUT_SECONDS")
+    claude_require_initial_approval: bool = Field(
+        default=True, alias="CLAUDE_REQUIRE_INITIAL_APPROVAL"
+    )
+    claude_initial_approval_risk_level: str = Field(
+        default="medium", alias="CLAUDE_INITIAL_APPROVAL_RISK_LEVEL"
+    )
+    claude_default_workdir: str | None = Field(default=None, alias="CLAUDE_DEFAULT_WORKDIR")
 
     @property
     def cors_origins(self) -> list[str]:

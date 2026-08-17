@@ -2,6 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
+from datetime import timedelta
+
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
 from app.schemas.account import AccountSummaryResponse, LimitStatusResponse, UsageSummaryResponse
@@ -11,6 +13,10 @@ from app.utils.datetime import utcnow
 
 router = APIRouter(prefix="/account", tags=["account"])
 
+# A device is considered "live" if it's checked in within this window —
+# generous enough to survive normal heartbeat gaps without flapping.
+_DEVICE_LIVE_WINDOW = timedelta(minutes=2)
+
 
 @router.get("/me", response_model=AccountSummaryResponse)
 async def account_me(
@@ -18,9 +24,18 @@ async def account_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> AccountSummaryResponse:
     active_sessions = await services.account_service.active_sessions_count(current_user.id)
+    device = await services.device_service.get_most_recent(current_user.id)
+    device_online = (
+        device is not None
+        and device.status == "online"
+        and device.last_seen_at is not None
+        and utcnow() - device.last_seen_at <= _DEVICE_LIVE_WINDOW
+    )
     return AccountSummaryResponse(
         user=UserOut.model_validate(current_user),
         active_sessions=active_sessions,
+        device_online=device_online,
+        device_last_seen_at=device.last_seen_at if device is not None else None,
         generated_at=utcnow(),
     )
 

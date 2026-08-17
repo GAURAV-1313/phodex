@@ -79,6 +79,18 @@ class PhodexApiClient {
     return response.data ?? <String, dynamic>{};
   }
 
+  Future<Map<String, dynamic>> putJson(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      path,
+      data: body ?? <String, dynamic>{},
+      options: await _authOptions(),
+    );
+    return response.data ?? <String, dynamic>{};
+  }
+
   Future<Response<ResponseBody>> getStream(String path) async {
     final options = await _authOptions();
     return _dio.get<ResponseBody>(

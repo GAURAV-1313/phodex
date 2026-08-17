@@ -76,6 +76,15 @@ class DeviceService:
             )
             return list(devices)
 
+    async def get_most_recent(self, user_id: UUID) -> Device | None:
+        async with self._session_factory() as session:
+            return await session.scalar(
+                select(Device)
+                .where(Device.user_id == user_id)
+                .order_by(Device.last_seen_at.desc().nulls_last())
+                .limit(1)
+            )
+
     async def get_device(self, user_id: UUID, device_id: UUID) -> Device:
         async with self._session_factory() as session:
             device = await session.scalar(

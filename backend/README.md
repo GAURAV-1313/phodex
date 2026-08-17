@@ -120,25 +120,49 @@ Extra visibility endpoints:
 ## Worker abstraction
 `app/workers/base.py` defines `WorkerEngine`.
 `app/workers/fake_worker.py` implements the V1 fake worker.
-`app/workers/codex_worker.py` runs a real runtime process via configurable command.
-
-> TODO: Swap fake worker with real Codex runtime while preserving `WorkerEngine` and `WorkerDispatcher`.
+`app/workers/common/` holds the pieces shared by every subprocess-backed
+engine: `subprocess_io.py` (spawn/stream/timeout), `context.py` (builds the
+prompt + workdir from task state), `state.py` (shared runtime state), and
+`orchestrator.py` (the dispatch/approval/cancel state machine).
+`app/workers/codex/` runs tasks through the Codex CLI (`codex exec --json`).
+`app/workers/claude/` runs tasks through the Claude Code CLI
+(`claude -p ... --output-format stream-json`). Both are thin subclasses of
+`SubprocessWorkerOrchestrator` supplying only their own command construction,
+output parsing, and approval/timeout settings.
 
 ### Worker selection (deployment)
 Use environment variables:
-- `WORKER_ENGINE=fake` (default) or `WORKER_ENGINE=codex`
+- `WORKER_ENGINE=fake` (default), `WORKER_ENGINE=codex`, or `WORKER_ENGINE=claude`
+
+**Codex** (`app/workers/codex/`):
 - `CODEX_COMMAND` (example: `codex`)
 - `CODEX_ARGS` (space-separated args)
 - `CODEX_PROMPT_STDIN=true|false`
 - `CODEX_TIMEOUT_SECONDS` (process timeout)
+- `CODEX_REQUIRE_INITIAL_APPROVAL=true|false`
+- `CODEX_DEFAULT_WORKDIR` (fallback repo path if task context has no local path)
 
 For the local worker, include `--ignore-user-config` in `CODEX_ARGS`. This keeps
 the authenticated Codex CLI available but prevents interactive MCP connectors
 (such as Figma, GitHub, or browser tools) from blocking an unattended task.
-- `CODEX_REQUIRE_INITIAL_APPROVAL=true|false`
-- `CODEX_DEFAULT_WORKDIR` (fallback repo path if task context has no local path)
 
-The Codex worker emits structured `task.log` payloads and supports approval-gated execution + cancellation. Keep it host-run for the local showcase, set `CODEX_DEFAULT_WORKDIR` to a disposable repository, and use the logged-in local Codex CLI.
+**Claude** (`app/workers/claude/`):
+- `CLAUDE_COMMAND` (example: `claude`)
+- `CLAUDE_EXTRA_ARGS` (space-separated args, appended after the fixed `-p <prompt> --output-format stream-json --verbose --permission-mode <mode>`)
+- `CLAUDE_PERMISSION_MODE` (`bypassPermissions` for unattended runs)
+- `CLAUDE_TIMEOUT_SECONDS` (process timeout)
+- `CLAUDE_REQUIRE_INITIAL_APPROVAL=true|false`
+- `CLAUDE_DEFAULT_WORKDIR` (fallback repo path if task context has no local path)
+
+Unlike Codex, the Claude worker never asks the model for an `OUTCOME:` sentinel
+line — the CLI's own terminal `result` event reports success/failure
+structurally via `is_error`, so that signal drives the task's final status.
+
+Both workers emit structured `task.log` payloads and support approval-gated
+execution + cancellation. Keep them host-run for the local showcase, set the
+matching `*_DEFAULT_WORKDIR` to a disposable repository, and use a logged-in
+local CLI (`codex login` / `claude` interactive login) — the worker inherits
+whatever session is already authenticated on the host.
 
 ## Recruiter demo
 
