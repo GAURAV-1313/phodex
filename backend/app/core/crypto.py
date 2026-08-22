@@ -12,7 +12,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from app.core.config import Settings
 
 
-class EncryptionKeyNotConfigured(RuntimeError):
+class EncryptionKeyNotConfiguredError(RuntimeError):
     def __init__(self) -> None:
         super().__init__(
             "SETTINGS_ENCRYPTION_KEY is not set. Generate one with "
@@ -28,7 +28,7 @@ def _fernet(key: str) -> Fernet:
 
 def _get_fernet(settings: Settings) -> Fernet:
     if not settings.settings_encryption_key:
-        raise EncryptionKeyNotConfigured
+        raise EncryptionKeyNotConfiguredError
     return _fernet(settings.settings_encryption_key)
 
 

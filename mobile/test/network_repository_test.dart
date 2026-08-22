@@ -61,6 +61,7 @@ void main() {
       'id': repoId,
       'user_id': userId,
       'device_id': '66666666-6666-6666-6666-666666666666',
+      'device_name': "Gaurav's Mac",
       'name': 'phodex',
       'local_path': '/Users/gaurav/phodex',
       'git_root': '/Users/gaurav/phodex',

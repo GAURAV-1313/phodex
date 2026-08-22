@@ -27,6 +27,7 @@ class SyncedRepositoryOut(ORMModel):
     id: UUID
     user_id: UUID
     device_id: UUID
+    device_name: str
     name: str
     local_path: str
     git_root: str
@@ -68,3 +69,7 @@ class ProjectContextOut(ORMModel):
 
 class RepoSelectResponse(BaseModel):
     project_context: ProjectContextOut
+
+
+class CurrentProjectContextResponse(BaseModel):
+    project_context: ProjectContextOut | None

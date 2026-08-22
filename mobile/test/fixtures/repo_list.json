@@ -4,6 +4,7 @@
       "id": "repo_1",
       "user_id": "usr_001",
       "device_id": "dev_1",
+      "device_name": "Gaurav's Mac",
       "name": "phodex",
       "local_path": "/Users/gaurav/phodex",
       "git_root": "/Users/gaurav/phodex",

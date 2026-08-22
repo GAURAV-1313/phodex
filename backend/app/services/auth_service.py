@@ -136,3 +136,27 @@ class AuthService:
                 raise UnauthorizedError("User not found")
 
             return user
+
+    async def get_current_session(self, bearer_token: str) -> Session:
+        token = bearer_token.removeprefix("Bearer ").strip()
+        if not token:
+            raise UnauthorizedError("Missing token")
+
+        try:
+            payload = self._jwt_manager.decode_access_token(token)
+        except TokenError as exc:
+            raise UnauthorizedError("Invalid access token") from exc
+
+        jti = payload.get("jti")
+        if not jti:
+            raise UnauthorizedError("Token missing required claims")
+
+        async with self._session_factory() as session:
+            db_session = await session.scalar(select(Session).where(Session.jwt_jti == str(jti)))
+            if db_session is None or db_session.revoked_at is not None:
+                raise UnauthorizedError("Session not found or revoked")
+
+            if coerce_utc(db_session.expires_at) < utcnow():
+                raise UnauthorizedError("Session expired")
+
+            return db_session

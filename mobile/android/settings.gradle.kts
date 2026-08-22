@@ -21,6 +21,10 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.9.1" apply false
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // Applied conditionally in app/build.gradle.kts, only once
+    // google-services.json exists (see the comment there) — push
+    // notifications need it, but its absence must never break a build.
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 include(":app")

@@ -65,6 +65,54 @@ class UsageSummaryResponseDto {
   }
 }
 
+class SessionInfoDto {
+  const SessionInfoDto({
+    required this.id,
+    required this.createdAt,
+    required this.expiresAt,
+    required this.isCurrent,
+  });
+
+  final String id;
+  final DateTime createdAt;
+  final DateTime expiresAt;
+  final bool isCurrent;
+
+  factory SessionInfoDto.fromJson(Map<String, dynamic> json) {
+    return SessionInfoDto(
+      id: json['id'] as String,
+      createdAt: parseDateTime(json['created_at']),
+      expiresAt: parseDateTime(json['expires_at']),
+      isCurrent: json['is_current'] as bool,
+    );
+  }
+
+  SessionInfo toDomain() {
+    return SessionInfo(
+      id: id,
+      createdAt: createdAt,
+      expiresAt: expiresAt,
+      isCurrent: isCurrent,
+    );
+  }
+}
+
+class SessionsResponseDto {
+  const SessionsResponseDto({required this.items});
+
+  final List<SessionInfoDto> items;
+
+  factory SessionsResponseDto.fromJson(Map<String, dynamic> json) {
+    return SessionsResponseDto(
+      items: (json['items'] as List<dynamic>)
+          .map((item) => SessionInfoDto.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  List<SessionInfo> toDomain() => items.map((item) => item.toDomain()).toList();
+}
+
 class LimitStatusResponseDto {
   const LimitStatusResponseDto({
     required this.generatedAt,

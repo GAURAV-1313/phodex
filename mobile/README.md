@@ -39,9 +39,37 @@ flutter run \
 
 Set the same web OAuth client ID as `GOOGLE_CLIENT_ID` in `backend/.env`. On
 iOS, also add the reversed iOS client ID URL scheme required by the Google
-Sign-In SDK to `ios/Runner/Info.plist`. Android can use `google-services.json`
+Sign-In SDK — `ios/Runner/Info.plist` already has a marked placeholder for
+this, just paste your value in. Android can use `google-services.json`
 instead of a supplied server client ID. These platform registration steps are
-required by the Google SDK, not by Phodex.
+required by the Google SDK, not by Phodex — see the backend README's
+"Setting up real Google Sign-In" section for the full step-by-step walkthrough
+(creating the OAuth clients, the consent screen, the Android SHA-1
+fingerprint).
+
+## Push notifications
+
+The Account → Notifications screen and the backend's push-sending code are
+both real and already wired (approval needed, task completed/failed). What's
+missing is your own Firebase project — until `flutterfire configure` has
+been run, `Firebase.initializeApp()` fails safely at startup and the
+Notifications screen shows an honest "not set up on this build yet" instead
+of a working toggle; nothing else in the app is affected. See the backend
+README's "Setting up real push notifications" section for the full
+walkthrough (Firebase project, service-account key, `flutterfire configure`,
+and the one manual Xcode step for iOS's Push Notifications capability).
+
+## Connecting to a real desktop (no rebuild needed)
+
+`--dart-define=PHODEX_BASE_URL=...` above is only a *build-time default* —
+useful for local dev, but not something an installed app can be pointed at a
+different backend with after the fact. For real use, the Welcome screen has
+a **Connect to your desktop** link: scan the QR code shown at the backend's
+`/pair` page (or type the address by hand), and the app remembers it from
+then on, overriding the compile-time default. See the backend README's
+"Connecting your phone remotely" section for the full setup, including
+Tailscale for access from outside your home Wi-Fi. The address can be
+changed later from Account → Desktop connection.
 
 ## UI-only mode
 

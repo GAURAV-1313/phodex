@@ -6,8 +6,11 @@ import 'package:mobile/features/ai_engine/presentation/ai_engine_screen.dart';
 import 'package:mobile/features/approvals/presentation/approvals_screen.dart';
 import 'package:mobile/features/home/presentation/home_screen.dart';
 import 'package:mobile/features/home/presentation/recents_screen.dart';
+import 'package:mobile/features/account/presentation/sessions_screen.dart';
+import 'package:mobile/features/notifications/presentation/notifications_screen.dart';
 import 'package:mobile/features/repos/presentation/repos_screen.dart';
 import 'package:mobile/features/session/presentation/session_screen.dart';
+import 'package:mobile/features/welcome/presentation/connect_desktop_screen.dart';
 import 'package:mobile/features/welcome/presentation/welcome_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -19,6 +22,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'welcome',
         pageBuilder: (context, state) =>
             fadeThroughPage(const WelcomeScreen(), state),
+      ),
+      GoRoute(
+        path: '/connect-desktop',
+        name: 'connect-desktop',
+        pageBuilder: (context, state) =>
+            slideUpPage(const ConnectDesktopScreen(), state),
       ),
       GoRoute(
         path: '/home',
@@ -71,6 +80,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'ai-engine',
         pageBuilder: (context, state) =>
             slideUpPage(const AiEngineScreen(), state),
+      ),
+      GoRoute(
+        path: '/account/sessions',
+        name: 'sessions',
+        pageBuilder: (context, state) =>
+            slideUpPage(const SessionsScreen(), state),
+      ),
+      GoRoute(
+        path: '/account/notifications',
+        name: 'notifications',
+        pageBuilder: (context, state) =>
+            slideUpPage(const NotificationsScreen(), state),
       ),
     ],
   );

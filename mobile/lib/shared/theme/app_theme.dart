@@ -7,29 +7,40 @@ import 'app_typography.dart';
 class AppTheme {
   const AppTheme._();
 
-  static ThemeData light() {
+  static ThemeData light() => _build(Brightness.light, AppColors.light);
+
+  static ThemeData dark() => _build(Brightness.dark, AppColors.dark);
+
+  static ThemeData _build(Brightness brightness, AppColors palette) {
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.bgPrimary,
-      colorScheme: const ColorScheme.light(
-        surface: AppColors.bgSurface,
-        primary: AppColors.accentPrimary,
-        error: AppColors.accentError,
-      ),
-      textTheme: AppTypography.textTheme,
+      brightness: brightness,
+      scaffoldBackgroundColor: palette.bgPrimary,
+      colorScheme: brightness == Brightness.light
+          ? ColorScheme.light(
+              surface: palette.bgSurface,
+              primary: palette.accentPrimary,
+              error: palette.accentError,
+            )
+          : ColorScheme.dark(
+              surface: palette.bgSurface,
+              primary: palette.accentPrimary,
+              error: palette.accentError,
+            ),
+      textTheme: AppTypography.textTheme(palette),
+      extensions: [palette],
     );
 
     return base.copyWith(
       cardTheme: CardThemeData(
-        color: AppColors.bgCard,
+        color: palette.bgCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.card),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.bgInput,
+        fillColor: palette.bgInput,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.input),
           borderSide: BorderSide.none,
@@ -40,12 +51,9 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.input),
-          borderSide: const BorderSide(color: AppColors.accentPrimary),
+          borderSide: BorderSide(color: palette.accentPrimary),
         ),
       ),
     );
   }
-
-  /// Backward-compatible alias for existing widget-test helpers.
-  static ThemeData dark() => light();
 }

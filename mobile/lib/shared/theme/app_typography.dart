@@ -31,7 +31,7 @@ class AppTypography {
     double fontSize = 34,
     double? height,
     FontWeight fontWeight = FontWeight.w600,
-    Color color = AppColors.textPrimary,
+    required Color color,
     double? letterSpacing,
   }) => GoogleFonts.fraunces(
     fontSize: fontSize,
@@ -41,48 +41,51 @@ class AppTypography {
     letterSpacing: letterSpacing,
   );
 
-  static TextTheme textTheme = TextTheme(
+  /// Builds the app's [TextTheme] from a concrete palette — called once per
+  /// theme (light/dark) so each ends up with its own themed text colors
+  /// instead of one static theme baked to light-mode colors.
+  static TextTheme textTheme(AppColors colors) => TextTheme(
     displaySmall: GoogleFonts.fraunces(
       fontSize: 34,
       height: 40 / 34,
       fontWeight: FontWeight.w600,
-      color: AppColors.textPrimary,
+      color: colors.textPrimary,
     ),
     headlineMedium: GoogleFonts.fraunces(
       fontSize: 28,
       height: 34 / 28,
       fontWeight: FontWeight.w600,
-      color: AppColors.textPrimary,
+      color: colors.textPrimary,
     ),
     headlineSmall: GoogleFonts.ibmPlexSans(
       fontSize: 22,
       height: 28 / 22,
       fontWeight: FontWeight.w600,
-      color: AppColors.textPrimary,
+      color: colors.textPrimary,
     ),
     bodyLarge: GoogleFonts.ibmPlexSans(
       fontSize: 16,
       height: 24 / 16,
       fontWeight: FontWeight.w400,
-      color: AppColors.textPrimary,
+      color: colors.textPrimary,
     ),
     bodyMedium: GoogleFonts.ibmPlexSans(
       fontSize: 15,
       height: 22 / 15,
       fontWeight: FontWeight.w400,
-      color: AppColors.textSecondary,
+      color: colors.textSecondary,
     ),
     labelMedium: GoogleFonts.ibmPlexSans(
       fontSize: 13,
       height: 18 / 13,
       fontWeight: FontWeight.w500,
-      color: AppColors.textMuted,
+      color: colors.textMuted,
     ),
   );
 
   static TextStyle code({
     double fontSize = 13,
-    Color color = AppColors.textSecondary,
+    required Color color,
     FontWeight fontWeight = FontWeight.w400,
   }) => GoogleFonts.ibmPlexMono(
     fontSize: fontSize,

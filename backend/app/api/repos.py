@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from app.api.deps import get_current_user, get_services
 from app.models.user import User
 from app.schemas.repos import (
+    CurrentProjectContextResponse,
     RepoListResponse,
     RepoSelectRequest,
     RepoSelectResponse,
@@ -38,6 +39,19 @@ async def list_repositories(
 ) -> RepoListResponse:
     repos = await services.repo_sync_service.list_repositories(current_user.id)
     return RepoListResponse(items=[SyncedRepositoryOut.model_validate(repo) for repo in repos])
+
+
+@router.get("/context/current", response_model=CurrentProjectContextResponse)
+async def get_current_context(
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> CurrentProjectContextResponse:
+    from app.schemas.repos import ProjectContextOut
+
+    context = await services.repo_sync_service.get_current_context(current_user.id)
+    return CurrentProjectContextResponse(
+        project_context=ProjectContextOut.model_validate(context) if context else None
+    )
 
 
 @router.get("/{repo_id}", response_model=SyncedRepositoryOut)

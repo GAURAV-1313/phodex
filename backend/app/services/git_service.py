@@ -77,7 +77,9 @@ class GitService:
         if commit_message and commit_message.strip():
             operation.commit_message = commit_message.strip()
 
-        await self._set_status(operation.id, GitOperationStatus.RUNNING)
+        await self._set_status(
+            operation.id, GitOperationStatus.RUNNING, commit_message=operation.commit_message
+        )
         await self._event_service.append_event(
             task_id,
             "git.started",
@@ -89,7 +91,13 @@ class GitService:
             await self._run_git_streamed(
                 task_id, operation.repo_path, ["commit", "-m", operation.commit_message]
             )
-            await self._run_git_streamed(task_id, operation.repo_path, ["push"])
+            # `-u origin HEAD` rather than a bare `push`: sets upstream tracking
+            # on the current branch's first-ever push (a bare `push` fails with
+            # "no upstream branch" then), and is a harmless no-op once tracking
+            # is already configured on later pushes.
+            await self._run_git_streamed(
+                task_id, operation.repo_path, ["push", "-u", "origin", "HEAD"]
+            )
         except GitCommandError as exc:
             await self._set_status(operation.id, GitOperationStatus.FAILED, error_message=str(exc))
             await self._event_service.append_event(
@@ -147,7 +155,11 @@ class GitService:
             return operation
 
     async def _set_status(
-        self, git_operation_id: UUID, status: GitOperationStatus, error_message: str | None = None
+        self,
+        git_operation_id: UUID,
+        status: GitOperationStatus,
+        error_message: str | None = None,
+        commit_message: str | None = None,
     ) -> None:
         async with self._session_factory() as session:
             operation = await session.get(GitOperation, git_operation_id)
@@ -156,6 +168,8 @@ class GitService:
             operation.status = status
             if error_message is not None:
                 operation.error_message = error_message
+            if commit_message is not None:
+                operation.commit_message = commit_message
             await session.commit()
 
     async def _run_git_capture(self, cwd: str, args: list[str]) -> str:

@@ -43,11 +43,7 @@ MascotMood moodForTaskStatus(TaskStatus status) => switch (status) {
 /// recolors with the theme, and animates its expression to match what the
 /// agent is actually doing.
 class PhodexMascot extends StatefulWidget {
-  const PhodexMascot({
-    super.key,
-    this.mood = MascotMood.idle,
-    this.size = 64,
-  });
+  const PhodexMascot({super.key, this.mood = MascotMood.idle, this.size = 64});
 
   final MascotMood mood;
   final double size;
@@ -66,7 +62,22 @@ class _PhodexMascotState extends State<PhodexMascot>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1700),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Respects the OS "Reduce Motion" setting (and lets widget tests settle
+    // without waiting out an intentionally-infinite decorative loop) instead
+    // of always animating regardless of context.
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -77,11 +88,16 @@ class _PhodexMascotState extends State<PhodexMascot>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => CustomPaint(
         size: Size(widget.size, widget.size),
-        painter: _RobinPainter(mood: widget.mood, t: _controller.value),
+        painter: _RobinPainter(
+          mood: widget.mood,
+          t: _controller.value,
+          colors: colors,
+        ),
       ),
     );
   }
@@ -119,11 +135,7 @@ class _RobinGlyphPainter extends CustomPainter {
     final o = Offset(size.width / 2, size.height / 2 + s * 0.02);
     final paint = Paint()..color = color;
 
-    final body = Rect.fromCenter(
-      center: o,
-      width: s * 0.68,
-      height: s * 0.62,
-    );
+    final body = Rect.fromCenter(center: o, width: s * 0.68, height: s * 0.62);
     canvas.drawRRect(
       RRect.fromRectAndRadius(body, Radius.circular(s * 0.3)),
       paint,
@@ -143,9 +155,10 @@ class _RobinGlyphPainter extends CustomPainter {
 }
 
 class _RobinPainter extends CustomPainter {
-  _RobinPainter({required this.mood, required this.t});
+  _RobinPainter({required this.mood, required this.t, required this.colors});
   final MascotMood mood;
   final double t;
+  final AppColors colors;
 
   double get _wave => math.sin(t * 2 * math.pi);
 
@@ -179,9 +192,14 @@ class _RobinPainter extends CustomPainter {
     final path = Path()
       ..moveTo(o.dx - s * 0.06, o.dy - s * 0.34)
       ..quadraticBezierTo(o.dx - s * 0.03, tipY, o.dx, o.dy - s * 0.32)
-      ..quadraticBezierTo(o.dx + s * 0.03, tipY, o.dx + s * 0.06, o.dy - s * 0.34)
+      ..quadraticBezierTo(
+        o.dx + s * 0.03,
+        tipY,
+        o.dx + s * 0.06,
+        o.dy - s * 0.34,
+      )
       ..close();
-    canvas.drawPath(path, Paint()..color = AppColors.mascotBodyDark);
+    canvas.drawPath(path, Paint()..color = colors.mascotBodyDark);
 
     final accentPulse = mood == MascotMood.thinking
         ? 0.6 + 0.4 * (0.5 + 0.5 * _wave)
@@ -189,7 +207,7 @@ class _RobinPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(o.dx, tipY),
       s * 0.028,
-      Paint()..color = AppColors.mascotAccent.withValues(alpha: accentPulse),
+      Paint()..color = colors.mascotAccent.withValues(alpha: accentPulse),
     );
   }
 
@@ -209,7 +227,7 @@ class _RobinPainter extends CustomPainter {
         ..quadraticBezierTo(s * 0.16 * side, s * 0.02, s * 0.1 * side, s * 0.22)
         ..quadraticBezierTo(s * 0.02 * side, s * 0.14, 0, s * 0.18)
         ..close();
-      canvas.drawPath(wing, Paint()..color = AppColors.mascotBodyDark);
+      canvas.drawPath(wing, Paint()..color = colors.mascotBodyDark);
       canvas.restore();
     }
   }
@@ -222,7 +240,7 @@ class _RobinPainter extends CustomPainter {
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, Radius.circular(s * 0.34)),
-      Paint()..color = AppColors.mascotBody,
+      Paint()..color = colors.mascotBody,
     );
   }
 
@@ -234,7 +252,7 @@ class _RobinPainter extends CustomPainter {
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, Radius.circular(s * 0.22)),
-      Paint()..color = AppColors.mascotBreast,
+      Paint()..color = colors.mascotBreast,
     );
   }
 
@@ -257,16 +275,16 @@ class _RobinPainter extends CustomPainter {
         ..lineTo(o.dx, beakY + s * 0.045)
         ..close();
     }
-    canvas.drawPath(path, Paint()..color = AppColors.mascotBeak);
+    canvas.drawPath(path, Paint()..color = colors.mascotBeak);
   }
 
   void _drawEyes(Canvas canvas, Offset o, double s) {
     final eyeY = o.dy - s * 0.13;
     final eyeDx = s * 0.13;
-    final white = Paint()..color = AppColors.mascotFace;
-    final pupil = Paint()..color = AppColors.mascotEye;
+    final white = Paint()..color = colors.mascotFace;
+    final pupil = Paint()..color = colors.mascotEye;
     final stroke = Paint()
-      ..color = AppColors.mascotEye
+      ..color = colors.mascotEye
       ..style = PaintingStyle.stroke
       ..strokeWidth = s * 0.028
       ..strokeCap = StrokeCap.round;
@@ -281,11 +299,7 @@ class _RobinPainter extends CustomPainter {
         final shift = _wave * s * 0.012;
         for (final dx in [-eyeDx, eyeDx]) {
           canvas.drawCircle(Offset(o.dx + dx, eyeY), s * 0.06, white);
-          canvas.drawCircle(
-            Offset(o.dx + dx + shift, eyeY),
-            s * 0.032,
-            pupil,
-          );
+          canvas.drawCircle(Offset(o.dx + dx + shift, eyeY), s * 0.032, pupil);
         }
       case MascotMood.curious:
         for (final dx in [-eyeDx, eyeDx]) {
@@ -315,7 +329,11 @@ class _RobinPainter extends CustomPainter {
         for (final side in [-1, 1]) {
           final dx = eyeDx * side;
           canvas.drawCircle(Offset(o.dx + dx, eyeY), s * 0.05, white);
-          canvas.drawCircle(Offset(o.dx + dx, eyeY + s * 0.012), s * 0.026, pupil);
+          canvas.drawCircle(
+            Offset(o.dx + dx, eyeY + s * 0.012),
+            s * 0.026,
+            pupil,
+          );
         }
         canvas.drawLine(
           Offset(o.dx - eyeDx - s * 0.045, eyeY - s * 0.075),
@@ -344,5 +362,7 @@ class _RobinPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RobinPainter oldDelegate) =>
-      oldDelegate.mood != mood || oldDelegate.t != t;
+      oldDelegate.mood != mood ||
+      oldDelegate.t != t ||
+      oldDelegate.colors != colors;
 }

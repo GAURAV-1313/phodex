@@ -14,6 +14,8 @@ class PhodexApp extends ConsumerWidget {
       title: 'Phodex',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: router,
     );
   }

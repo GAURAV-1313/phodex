@@ -36,6 +36,21 @@ class MockBackendStore {
 
   int _idCounter = 40;
 
+  final List<SessionInfo> _sessions = [
+    SessionInfo(
+      id: 'session_current',
+      createdAt: DateTime.now().toUtc().subtract(const Duration(hours: 2)),
+      expiresAt: DateTime.now().toUtc().add(const Duration(days: 6)),
+      isCurrent: true,
+    ),
+    SessionInfo(
+      id: 'session_ipad',
+      createdAt: DateTime.now().toUtc().subtract(const Duration(days: 3)),
+      expiresAt: DateTime.now().toUtc().add(const Duration(days: 4)),
+      isCurrent: false,
+    ),
+  ];
+
   final UserProfile _user = UserProfile(
     id: 'usr_001',
     googleSub: 'google-sub-001',
@@ -280,7 +295,8 @@ class MockBackendStore {
       commitMessage: 'Phodex: ${task.title ?? task.prompt}',
       status: GitOperationStatus.pendingReview,
       statusOutput: ' M lib/example.dart\n?? lib/new_file.dart',
-      diffStatOutput: ' lib/example.dart | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)',
+      diffStatOutput:
+          ' lib/example.dart | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)',
     );
     _gitOperationsById[operation.id] = operation;
     return operation;
@@ -298,11 +314,32 @@ class MockBackendStore {
     if (operation.status != GitOperationStatus.pendingReview) {
       throw StateError('Git operation already resolved');
     }
+    final effectiveMessage =
+        (commitMessage != null && commitMessage.trim().isNotEmpty)
+        ? commitMessage
+        : operation.commitMessage;
     final resolved = operation.copyWith(
-      commitMessage: commitMessage ?? operation.commitMessage,
+      commitMessage: effectiveMessage,
       status: GitOperationStatus.completed,
     );
     _gitOperationsById[gitOperationId] = resolved;
+    _emitEvent(
+      taskId: taskId,
+      type: 'git.started',
+      data: {'message': 'Committing and pushing changes…'},
+    );
+    for (final line in [
+      "add 'lib/example.dart'",
+      "add 'lib/new_file.dart'",
+      '[main abc1234] $effectiveMessage',
+      ' 2 files changed, 6 insertions(+), 2 deletions(-)',
+      'Enumerating objects: 5, done.',
+      'Writing objects: 100% (3/3), done.',
+      'To github.com:example/repo.git',
+      '   9f8e7d6..abc1234  main -> main',
+    ]) {
+      _emitEvent(taskId: taskId, type: 'git.log', data: {'message': line});
+    }
     _emitEvent(
       taskId: taskId,
       type: 'git.completed',
@@ -343,8 +380,10 @@ class MockBackendStore {
       hasOpenaiKey: clearOpenaiKey
           ? false
           : (openaiApiKey?.isNotEmpty ?? _aiSettings.hasOpenaiKey),
-      preferredClaudeModel: preferredClaudeModel ?? _aiSettings.preferredClaudeModel,
-      preferredCodexModel: preferredCodexModel ?? _aiSettings.preferredCodexModel,
+      preferredClaudeModel:
+          preferredClaudeModel ?? _aiSettings.preferredClaudeModel,
+      preferredCodexModel:
+          preferredCodexModel ?? _aiSettings.preferredCodexModel,
     );
     return _aiSettings;
   }
@@ -418,6 +457,20 @@ class MockBackendStore {
     );
   }
 
+  List<SessionInfo> listSessions() => List.unmodifiable(_sessions);
+
+  void revokeSession(String sessionId) {
+    _sessions.removeWhere(
+      (session) => session.id == sessionId && !session.isCurrent,
+    );
+  }
+
+  int revokeOtherSessions() {
+    final removed = _sessions.where((session) => !session.isCurrent).length;
+    _sessions.removeWhere((session) => !session.isCurrent);
+    return removed;
+  }
+
   LimitStatus getLimitStatus() {
     final usage = getUsageSummary();
     const maxConcurrent = 3;
@@ -468,6 +521,7 @@ class MockBackendStore {
         id: 'repo_001',
         userId: _user.id,
         deviceId: 'dev_mac_001',
+        deviceName: "Gaurav's Mac",
         name: 'AFTR-backend',
         localPath: '/Users/gaurav/Documents/aftr/AFTR-backend',
         gitRoot: '/Users/gaurav/Documents/aftr/AFTR-backend',
@@ -484,6 +538,7 @@ class MockBackendStore {
         id: 'repo_002',
         userId: _user.id,
         deviceId: 'dev_mac_001',
+        deviceName: "Gaurav's Mac",
         name: 'phodex',
         localPath: '/Users/gaurav/phodex',
         gitRoot: '/Users/gaurav/phodex',
@@ -500,6 +555,7 @@ class MockBackendStore {
         id: 'repo_003',
         userId: _user.id,
         deviceId: 'dev_mac_001',
+        deviceName: "Gaurav's Mac",
         name: 'legacy-tools',
         localPath: '/Users/gaurav/work/legacy-tools',
         gitRoot: '/Users/gaurav/work/legacy-tools',

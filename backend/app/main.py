@@ -25,6 +25,8 @@ from app.services.device_service import DeviceService
 from app.services.event_service import EventBus, EventService
 from app.services.git_service import GitService
 from app.services.google_auth_service import GoogleAuthService
+from app.services.pairing_service import resolve_public_base_url
+from app.services.push_service import PushService
 from app.services.redis_service import RedisService
 from app.services.repo_sync_service import RepoSyncService
 from app.services.service_registry import ServiceRegistry
@@ -46,16 +48,19 @@ def _build_service_registry(
     event_bus = EventBus(redis)
 
     event_service = EventService(session_factory=session_factory, event_bus=event_bus)
+    push_service = PushService(session_factory=session_factory, settings=settings)
     task_service = TaskService(
         session_factory=session_factory,
         event_service=event_service,
         settings=settings,
         redis=redis,
+        push_service=push_service,
     )
     approval_service = ApprovalService(
         session_factory=session_factory,
         event_service=event_service,
         redis=redis,
+        push_service=push_service,
     )
     user_ai_settings_service = UserAiSettingsService(
         session_factory=session_factory,
@@ -114,6 +119,7 @@ def _build_service_registry(
         worker_dispatcher=worker_dispatcher,
         git_service=GitService(session_factory=session_factory, event_service=event_service),
         user_ai_settings_service=user_ai_settings_service,
+        push_service=push_service,
         redis=redis,
     )
 
@@ -136,6 +142,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.services = _build_service_registry(app_settings, session_factory, redis)
         await app.state.services.event_service.start()
         configure_runtime_telemetry(app_settings, engine.sync_engine)
+
+        _, is_guessed = resolve_public_base_url(app_settings)
+        note = " (same Wi-Fi only — set PUBLIC_BASE_URL for anywhere access)" if is_guessed else ""
+        print(
+            f"\n  Connect your phone: open http://localhost:8000/pair in a "
+            f"browser and scan the QR code{note}.\n",
+            flush=True,
+        )
 
         yield
 

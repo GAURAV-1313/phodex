@@ -50,6 +50,7 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
               style: AppTypography.display(
                 fontSize: AppTypeScale.displayLarge,
                 letterSpacing: -1,
+                color: context.colors.textPrimary,
               ),
             ),
             const SizedBox(height: 28),
@@ -59,7 +60,7 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
               decoration: InputDecoration(
                 hintText: 'Search tasks…',
                 prefixIcon: const Icon(Icons.search_rounded),
-                fillColor: AppColors.bgInput,
+                fillColor: context.colors.bgInput,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -77,8 +78,8 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
                           label: Text(filter),
                           selected: _filter == filter,
                           onSelected: (_) => setState(() => _filter = filter),
-                          selectedColor: Colors.white,
-                          backgroundColor: AppColors.bgInput,
+                          selectedColor: context.colors.bgCard,
+                          backgroundColor: context.colors.bgInput,
                           shape: const StadiumBorder(),
                         ),
                       ),
@@ -97,9 +98,9 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
                                   ? !task.status.isTerminal
                                   : task.status == TaskStatus.completed)) &&
                           (_query.isEmpty ||
-                              (task.title ?? task.prompt).toLowerCase().contains(
-                                _query.toLowerCase(),
-                              )),
+                              (task.title ?? task.prompt)
+                                  .toLowerCase()
+                                  .contains(_query.toLowerCase())),
                     )
                     .toList();
                 if (tasks.isEmpty) {
@@ -113,15 +114,16 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
                           'No tasks yet',
                           style: AppTypography.display(
                             fontSize: AppTypeScale.title,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           'Describe what you need built and your agent will get to work.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: AppTypeScale.body,
-                            color: AppColors.textSecondary,
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -139,6 +141,7 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
                           'No matching tasks',
                           style: AppTypography.display(
                             fontSize: AppTypeScale.title,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -147,9 +150,9 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
                               ? 'Nothing named "$_query". Try a different search.'
                               : 'No tasks match this filter yet.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: AppTypeScale.body,
-                            color: AppColors.textSecondary,
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -159,12 +162,12 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'TODAY',
                       style: TextStyle(
                         letterSpacing: 1.2,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textMuted,
+                        color: context.colors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -213,7 +216,11 @@ class _ActivityCard extends StatelessWidget {
           Column(
             children: [
               PhodexMascot(size: 52, mood: moodForTaskStatus(task.status)),
-              Container(width: 2, height: 78, color: AppColors.borderSubtle),
+              Container(
+                width: 2,
+                height: 78,
+                color: context.colors.borderSubtle,
+              ),
             ],
           ),
           const SizedBox(width: 16),
@@ -247,10 +254,10 @@ class _ActivityCard extends StatelessWidget {
                               task.status.value),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       height: 1.45,
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                   if (live) ...[
@@ -276,7 +283,7 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: taskStatusColor(status.value),
+      color: taskStatusColor(context.colors, status.value),
       borderRadius: BorderRadius.circular(16),
     ),
     child: Text(

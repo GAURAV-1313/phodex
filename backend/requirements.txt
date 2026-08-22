@@ -16,6 +16,7 @@ python-multipart==0.0.20
 email-validator==2.2.0
 passlib[bcrypt]==1.7.4
 structlog==25.4.0
+qrcode[pil]==8.0
 redis==5.2.1
 prometheus-client==0.21.1
 opentelemetry-api==1.29.0

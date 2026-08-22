@@ -33,3 +33,7 @@ class SyncedRepository(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user = relationship("User", back_populates="synced_repositories")
     device = relationship("Device", back_populates="repositories")
     project_contexts = relationship("ProjectContext", back_populates="synced_repository")
+
+    @property
+    def device_name(self) -> str:
+        return str(self.device.name)

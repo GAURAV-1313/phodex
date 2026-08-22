@@ -71,7 +71,12 @@ class ProcessRunner:
             # token rather than appending at the end, where it could land after
             # that positional and be misparsed.
             insert_at = 1 if arg_tokens[:1] == ["exec"] else len(arg_tokens)
-            arg_tokens = arg_tokens[:insert_at] + ["--model", model] + arg_tokens[insert_at:]
+            arg_tokens = [
+                *arg_tokens[:insert_at],
+                "--model",
+                model,
+                *arg_tokens[insert_at:],
+            ]
         command = [self._settings.codex_command, *arg_tokens]
         if not command or not command[0]:
             raise RuntimeError("CODEX_COMMAND is empty")

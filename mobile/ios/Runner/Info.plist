@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Mobile</string>
+	<string>Phodex</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,26 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Phodex uses the camera to scan the QR code shown on your desktop when connecting to it.</string>
+	<!-- Google Sign-In section — required even though the client/server IDs
+	     themselves are passed at build time via --dart-define (see
+	     AuthController._authenticateNatively and mobile/README.md). Replace
+	     the placeholder below with your iOS OAuth client's REVERSED_CLIENT_ID
+	     (from GoogleService-Info.plist, or reverse your iOS client ID's
+	     numeric part yourself: com.googleusercontent.apps.<numeric-id>). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- TODO: replace with your REVERSED_CLIENT_ID -->
+				<string>com.googleusercontent.apps.REPLACE_WITH_YOUR_IOS_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -49,6 +69,17 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Lets a push actually wake the app to fetch/process it while
+	     backgrounded — required for background notification delivery.
+	     This alone isn't sufficient for push, though: in Xcode, Signing &
+	     Capabilities → "+ Capability" → Push Notifications must also be
+	     added once, which creates Runner.entitlements (aps-environment) and
+	     wires it into the project automatically — safer done there than by
+	     hand-editing the Xcode project file. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

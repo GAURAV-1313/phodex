@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.models.session import Session
 from app.models.user import User
 from app.services.service_registry import ServiceRegistry
 
@@ -21,3 +22,13 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
 
     return await services.auth_service.get_user_from_bearer(f"Bearer {credentials.credentials}")
+
+
+async def get_current_session(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+) -> Session:
+    if credentials is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
+
+    return await services.auth_service.get_current_session(f"Bearer {credentials.credentials}")

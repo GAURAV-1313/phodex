@@ -19,12 +19,12 @@ class AiEngineScreen extends ConsumerWidget {
         children: [
           StitchHeader(title: 'AI engine', onBack: () => context.pop()),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             'Phodex uses whatever Codex or Claude CLI is already logged in '
             'on your desktop by default. Setting a key below overrides that '
             'for your own tasks only — leave it blank to keep using the '
             'desktop login.',
-            style: TextStyle(color: AppColors.textSecondary, height: 1.5),
+            style: TextStyle(color: context.colors.textSecondary, height: 1.5),
           ),
           const SizedBox(height: 28),
           value.when(
@@ -188,16 +188,20 @@ class _ProviderCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: (connected
-                        ? AppColors.accentSuccess
-                        : AppColors.textMuted)
-                    .withValues(alpha: .12),
+                color:
+                    (connected
+                            ? context.colors.accentSuccess
+                            : context.colors.textMuted)
+                        .withValues(alpha: .12),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
@@ -206,8 +210,8 @@ class _ProviderCard extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: connected
-                      ? AppColors.accentSuccess
-                      : AppColors.textMuted,
+                      ? context.colors.accentSuccess
+                      : context.colors.textMuted,
                 ),
               ),
             ),

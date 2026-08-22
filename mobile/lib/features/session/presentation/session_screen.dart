@@ -19,34 +19,36 @@ class SessionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(sessionProvider(taskId));
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: SafeArea(
         child: value.when(
           data: (session) => _ExecutionView(
             session: session,
             onApprove: (id) =>
                 ref.read(sessionProvider(taskId).notifier).approve(id),
-            onReject: (id) =>
-                ref.read(sessionProvider(taskId).notifier).reject(id),
+            onReject: (id, {note}) => ref
+                .read(sessionProvider(taskId).notifier)
+                .reject(id, note: note),
             onCancel: () =>
                 ref.read(sessionProvider(taskId).notifier).cancelTask(),
             onReply: (message) =>
                 ref.read(sessionProvider(taskId).notifier).sendReply(message),
-            onPrepareCommit: () =>
-                ref.read(gitOpsRepositoryProvider).prepareCommit(
-                  taskId: taskId,
-                ),
-            onConfirmCommit: (gitOperationId, commitMessage) =>
-                ref.read(gitOpsRepositoryProvider).confirmCommit(
+            onPrepareCommit: () => ref
+                .read(gitOpsRepositoryProvider)
+                .prepareCommit(taskId: taskId),
+            onConfirmCommit: (gitOperationId, commitMessage) => ref
+                .read(gitOpsRepositoryProvider)
+                .confirmCommit(
                   taskId: taskId,
                   gitOperationId: gitOperationId,
                   commitMessage: commitMessage,
                 ),
-            onDiscardCommit: (gitOperationId) =>
-                ref.read(gitOpsRepositoryProvider).discardCommit(
-                  taskId: taskId,
-                  gitOperationId: gitOperationId,
-                ),
+            onDiscardCommit: (gitOperationId) => ref
+                .read(gitOpsRepositoryProvider)
+                .discardCommit(taskId: taskId, gitOperationId: gitOperationId),
+            onContinueWithNewTask: (prompt) => ref
+                .read(sessionProvider(taskId).notifier)
+                .continueWithNewTask(prompt),
           ),
           loading: () => const PhodexLoading(),
           error: (error, _) => StitchErrorState(
@@ -69,16 +71,21 @@ class _ExecutionView extends StatefulWidget {
     required this.onPrepareCommit,
     required this.onConfirmCommit,
     required this.onDiscardCommit,
+    required this.onContinueWithNewTask,
   });
   final SessionUiState session;
   final ValueChanged<String> onApprove;
-  final ValueChanged<String> onReject;
+  final void Function(String approvalId, {String? note}) onReject;
   final VoidCallback onCancel;
   final ValueChanged<String> onReply;
   final Future<GitOperation> Function() onPrepareCommit;
-  final Future<GitOperation> Function(String gitOperationId, String commitMessage)
+  final Future<GitOperation> Function(
+    String gitOperationId,
+    String commitMessage,
+  )
   onConfirmCommit;
   final Future<GitOperation> Function(String gitOperationId) onDiscardCommit;
+  final Future<TaskSummary?> Function(String prompt) onContinueWithNewTask;
   @override
   State<_ExecutionView> createState() => _ExecutionViewState();
 }
@@ -100,9 +107,9 @@ class _ExecutionViewState extends State<_ExecutionView> {
     } catch (e) {
       if (!context.mounted) return;
       setState(() => _preparingCommit = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not prepare commit: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not prepare commit: $e')));
       return;
     }
     if (!context.mounted) return;
@@ -118,6 +125,19 @@ class _ExecutionViewState extends State<_ExecutionView> {
         onDiscard: widget.onDiscardCommit,
       ),
     );
+  }
+
+  Future<void> _startFollowUpTask(BuildContext context) async {
+    final newTaskId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _FollowUpTaskSheet(onSubmit: widget.onContinueWithNewTask),
+    );
+    if (newTaskId != null && context.mounted) {
+      context.go('/session/$newTaskId');
+    }
   }
 
   @override
@@ -157,7 +177,7 @@ class _ExecutionViewState extends State<_ExecutionView> {
                 complete ? task.status.value.toUpperCase() : 'EXECUTION LIVE',
                 style: TextStyle(
                   letterSpacing: 2,
-                  color: taskStatusColor(task.status.value),
+                  color: taskStatusColor(context.colors, task.status.value),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -167,15 +187,19 @@ class _ExecutionViewState extends State<_ExecutionView> {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.display(fontSize: 24, height: 1.2),
+                style: AppTypography.display(
+                  fontSize: 24,
+                  height: 1.2,
+                  color: context.colors.textPrimary,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
                 task.currentPhase ??
                     (complete ? 'Execution finished' : 'Your agent is working'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],
@@ -195,7 +219,14 @@ class _ExecutionViewState extends State<_ExecutionView> {
               approval: approval,
               busy: widget.session.isResolvingApproval,
               onApprove: () => widget.onApprove(approval!.id),
-              onReject: () => widget.onReject(approval!.id),
+              onReject: () async {
+                final reason = await showRejectReasonDialog(context);
+                if (reason == null) return;
+                widget.onReject(
+                  approval!.id,
+                  note: reason.isEmpty ? null : reason,
+                );
+              },
             ),
           ),
         if (complete)
@@ -230,8 +261,8 @@ class _ExecutionViewState extends State<_ExecutionView> {
                 _preparingCommit ? 'Checking for changes…' : 'Commit & Push',
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accentPrimary,
-                side: const BorderSide(color: AppColors.accentPrimary),
+                foregroundColor: context.colors.accentPrimary,
+                side: BorderSide(color: context.colors.accentPrimary),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -240,12 +271,17 @@ class _ExecutionViewState extends State<_ExecutionView> {
           ),
           const SizedBox(height: 12),
         ],
-        if (complete)
+        if (complete) ...[
           StitchPrimaryButton(
             label: 'Done',
             onPressed: () => context.go('/activity'),
-          )
-        else
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => _startFollowUpTask(context),
+            child: const Text('Start a follow-up task'),
+          ),
+        ] else
           SizedBox(
             height: 50,
             width: double.infinity,
@@ -254,8 +290,8 @@ class _ExecutionViewState extends State<_ExecutionView> {
               icon: const Icon(Icons.terminal_rounded, size: 18),
               label: const Text('View terminal logs'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.borderSubtle),
+                foregroundColor: context.colors.textSecondary,
+                side: BorderSide(color: context.colors.borderSubtle),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -265,15 +301,15 @@ class _ExecutionViewState extends State<_ExecutionView> {
         if (!complete) ...[
           TextButton(
             onPressed: widget.onCancel,
-            child: const Text(
+            child: Text(
               'Cancel task',
-              style: TextStyle(color: AppColors.accentError),
+              style: TextStyle(color: context.colors.accentError),
             ),
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.bgCard,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -298,7 +334,7 @@ class _ExecutionViewState extends State<_ExecutionView> {
                   },
                   icon: const Icon(Icons.arrow_upward_rounded),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.accentPrimary,
+                    backgroundColor: context.colors.accentPrimary,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -319,22 +355,23 @@ class _ExecutionViewState extends State<_ExecutionView> {
   );
 }
 
-(IconData, Color) _timelineIconFor(String eventType) => switch (eventType) {
-  'task.starting' => (
-    Icons.play_circle_outline_rounded,
-    AppColors.accentPrimary,
-  ),
-  'task.running' => (Icons.autorenew_rounded, AppColors.accentPrimary),
-  'task.completed' => (Icons.check_circle_rounded, AppColors.accentSuccess),
-  'task.failed' => (Icons.error_rounded, AppColors.accentError),
-  'task.cancelled' => (Icons.stop_circle_rounded, AppColors.textMuted),
-  'task.progress' => (Icons.circle, AppColors.textMuted),
-  'git.started' => (Icons.upload_rounded, AppColors.accentPrimary),
-  'git.completed' => (Icons.check_circle_rounded, AppColors.accentSuccess),
-  'git.failed' => (Icons.error_rounded, AppColors.accentError),
-  'git.discarded' => (Icons.stop_circle_rounded, AppColors.textMuted),
-  _ => (Icons.circle, AppColors.textMuted),
-};
+(IconData, Color) _timelineIconFor(AppColors colors, String eventType) =>
+    switch (eventType) {
+      'task.starting' => (
+        Icons.play_circle_outline_rounded,
+        colors.accentPrimary,
+      ),
+      'task.running' => (Icons.autorenew_rounded, colors.accentPrimary),
+      'task.completed' => (Icons.check_circle_rounded, colors.accentSuccess),
+      'task.failed' => (Icons.error_rounded, colors.accentError),
+      'task.cancelled' => (Icons.stop_circle_rounded, colors.textMuted),
+      'task.progress' => (Icons.circle, colors.textMuted),
+      'git.started' => (Icons.upload_rounded, colors.accentPrimary),
+      'git.completed' => (Icons.check_circle_rounded, colors.accentSuccess),
+      'git.failed' => (Icons.error_rounded, colors.accentError),
+      'git.discarded' => (Icons.stop_circle_rounded, colors.textMuted),
+      _ => (Icons.circle, colors.textMuted),
+    };
 
 String _capitalize(String value) =>
     value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
@@ -348,7 +385,13 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = events.where((event) => event.type != 'task.log').toList();
+    // Raw per-line log output (agent stdout, git command output) belongs in
+    // the "Execution logs" sheet, not the milestone timeline — otherwise a
+    // verbose git push floods this list and the "+N more steps" button
+    // opens a sheet that doesn't even show the events that caused it.
+    final steps = events
+        .where((event) => event.type != 'task.log' && event.type != 'git.log')
+        .toList();
     final visible = steps.take(_visibleCap).toList();
     final remaining = steps.length - visible.length;
     final timeFormat = DateFormat.Hm();
@@ -367,7 +410,10 @@ class _Timeline extends StatelessWidget {
                 children: [
                   Builder(
                     builder: (context) {
-                      final (icon, color) = _timelineIconFor(event.type);
+                      final (icon, color) = _timelineIconFor(
+                        context.colors,
+                        event.type,
+                      );
                       final isDot =
                           event.type == 'task.progress' ||
                           !{
@@ -402,9 +448,9 @@ class _Timeline extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     timeFormat.format(event.timestamp.toLocal()),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textMuted,
+                      color: context.colors.textMuted,
                     ),
                   ),
                 ],
@@ -423,10 +469,10 @@ class _Timeline extends StatelessWidget {
               ),
               child: Text(
                 '+$remaining more steps',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.accentPrimary,
+                  color: context.colors.accentPrimary,
                 ),
               ),
             ),
@@ -454,11 +500,11 @@ class _ApprovalBlock extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'HUMAN VERIFICATION NEEDED',
             style: TextStyle(
               letterSpacing: 1.1,
-              color: Color(0xFF9A5A15),
+              color: context.colors.accentWarning,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -470,12 +516,12 @@ class _ApprovalBlock extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             '\$ $command',
-            style: AppTypography.code(color: AppColors.accentPrimary),
+            style: AppTypography.code(color: context.colors.accentPrimary),
           ),
           const SizedBox(height: 18),
           Text(
             approval.description,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
           const SizedBox(height: 20),
           Row(
@@ -508,7 +554,10 @@ class _CommitPushSheet extends StatefulWidget {
     required this.onDiscard,
   });
   final GitOperation operation;
-  final Future<GitOperation> Function(String gitOperationId, String commitMessage)
+  final Future<GitOperation> Function(
+    String gitOperationId,
+    String commitMessage,
+  )
   onConfirm;
   final Future<GitOperation> Function(String gitOperationId) onDiscard;
 
@@ -569,9 +618,9 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
         24,
         24 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: context.colors.bgSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -582,7 +631,7 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
               width: 42,
               height: 5,
               decoration: BoxDecoration(
-                color: AppColors.borderSubtle,
+                color: context.colors.borderSubtle,
                 borderRadius: BorderRadius.circular(5),
               ),
             ),
@@ -595,8 +644,8 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
                   : Icons.error_outline,
               size: 48,
               color: _operation.status == GitOperationStatus.completed
-                  ? AppColors.accentSuccess
-                  : AppColors.accentError,
+                  ? context.colors.accentSuccess
+                  : context.colors.accentError,
             ),
             const SizedBox(height: 14),
             Text(
@@ -609,7 +658,7 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
               const SizedBox(height: 10),
               Text(
                 _operation.errorMessage!,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: context.colors.textSecondary),
               ),
             ],
             const SizedBox(height: 22),
@@ -632,12 +681,12 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
             ),
             const SizedBox(height: 16),
             if ((_operation.statusOutput ?? '').isNotEmpty) ...[
-              const Text(
+              Text(
                 'CHANGES',
                 style: TextStyle(
                   letterSpacing: 1.1,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+                  color: context.colors.textMuted,
                 ),
               ),
               const SizedBox(height: 8),
@@ -646,13 +695,16 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
                 constraints: const BoxConstraints(maxHeight: 160),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.bgInput,
+                  color: context.colors.bgInput,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: SingleChildScrollView(
                   child: Text(
                     _operation.statusOutput ?? '',
-                    style: AppTypography.code(fontSize: 13),
+                    style: AppTypography.code(
+                      fontSize: 13,
+                      color: context.colors.textSecondary,
+                    ),
                   ),
                 ),
               ),
@@ -676,6 +728,98 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FollowUpTaskSheet extends StatefulWidget {
+  const _FollowUpTaskSheet({required this.onSubmit});
+  final Future<TaskSummary?> Function(String prompt) onSubmit;
+
+  @override
+  State<_FollowUpTaskSheet> createState() => _FollowUpTaskSheetState();
+}
+
+class _FollowUpTaskSheetState extends State<_FollowUpTaskSheet> {
+  final _prompt = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _prompt.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final prompt = _prompt.text.trim();
+    if (prompt.isEmpty || _submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final task = await widget.onSubmit(prompt);
+      if (!mounted) return;
+      if (task != null) {
+        Navigator.pop(context, task.id);
+      } else {
+        setState(() => _submitting = false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not start task: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      decoration: BoxDecoration(
+        color: context.colors.bgSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 5,
+              decoration: BoxDecoration(
+                color: context.colors.borderSubtle,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Start a follow-up task',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _prompt,
+            autofocus: true,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: 'Describe what you need built next…',
+            ),
+          ),
+          const SizedBox(height: 16),
+          StitchPrimaryButton(
+            label: _submitting ? 'Starting…' : 'Start task',
+            onPressed: _submitting ? null : _submit,
+          ),
         ],
       ),
     );
@@ -708,17 +852,17 @@ class _CompletionCard extends StatelessWidget {
                   : Icons.info_outline,
               size: 56,
               color: task.status == TaskStatus.completed
-                  ? AppColors.accentSuccess
-                  : AppColors.accentError,
+                  ? context.colors.accentSuccess
+                  : context.colors.accentError,
             ),
             const SizedBox(height: 16),
             Text(
               summary,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 height: 1.5,
-                color: AppColors.textSecondary,
+                color: context.colors.textSecondary,
               ),
             ),
           ],
@@ -734,7 +878,9 @@ class _LogsSheet extends StatelessWidget {
   final VoidCallback onCancel;
   @override
   Widget build(BuildContext context) {
-    final logs = events.where((event) => event.type == 'task.log').toList();
+    final logs = events
+        .where((event) => event.type == 'task.log' || event.type == 'git.log')
+        .toList();
     return Container(
       height: MediaQuery.sizeOf(context).height * .76,
       padding: const EdgeInsets.all(22),

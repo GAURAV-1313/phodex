@@ -16,6 +16,13 @@ def _git(*args: str, cwd: str) -> None:
     subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
+async def _git_output(*args: str, cwd: str) -> str:
+    result = await asyncio.to_thread(
+        subprocess.run, ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
+    )
+    return result.stdout
+
+
 @pytest.fixture
 def scratch_repo(tmp_path):
     repo = tmp_path / "scratch-repo"
@@ -35,6 +42,16 @@ def scratch_repo_with_remote(scratch_repo, tmp_path):
     subprocess.run(["git", "init", "--bare", str(bare)], check=True, capture_output=True)
     _git("remote", "add", "origin", str(bare), cwd=str(scratch_repo))
     _git("push", "-u", "origin", "main", cwd=str(scratch_repo))
+    return scratch_repo, bare
+
+
+@pytest.fixture
+def scratch_repo_with_untracked_remote(scratch_repo, tmp_path):
+    """A remote that's configured but never pushed to — no upstream tracking
+    yet, the exact state of a repo's first-ever push."""
+    bare = tmp_path / "scratch-remote-untracked.git"
+    subprocess.run(["git", "init", "--bare", str(bare)], check=True, capture_output=True)
+    _git("remote", "add", "origin", str(bare), cwd=str(scratch_repo))
     return scratch_repo, bare
 
 
@@ -133,20 +150,46 @@ async def test_confirm_commits_and_pushes_successfully(
     body = confirmed.json()
     assert body["status"] == "completed"
     assert body["error_message"] is None
+    # Regression: the API response previously kept showing the default
+    # "Phodex: ..." message here even though the real git commit correctly
+    # used the caller's override — the override was only ever mutated on a
+    # detached in-memory object, never persisted before this response was
+    # built from a fresh DB read.
+    assert body["commit_message"] == "Add feature.txt"
 
-    log = subprocess.run(
-        ["git", "log", "-1", "--pretty=%s"], cwd=str(repo), capture_output=True, text=True, check=True
-    )
-    assert log.stdout.strip() == "Add feature.txt"
+    log_stdout = await _git_output("log", "-1", "--pretty=%s", cwd=str(repo))
+    assert log_stdout.strip() == "Add feature.txt"
 
-    remote_log = subprocess.run(
-        ["git", "log", "-1", "--pretty=%s", "main"],
-        cwd=str(bare_remote),
-        capture_output=True,
-        text=True,
-        check=True,
+    remote_log_stdout = await _git_output("log", "-1", "--pretty=%s", "main", cwd=str(bare_remote))
+    assert remote_log_stdout.strip() == "Add feature.txt"
+
+
+async def test_confirm_succeeds_on_first_ever_push_with_no_upstream(
+    client: AsyncClient, login, scratch_repo_with_untracked_remote
+):
+    """Regression: a bare `git push` fails with "no upstream branch" the
+    first time a branch is ever pushed. `confirm()` must set tracking itself
+    rather than assuming an operator already ran `push -u` once by hand."""
+    repo, bare_remote = scratch_repo_with_untracked_remote
+    headers = await login("git-first-push-user")
+    (repo / "first.txt").write_text("never pushed before\n")
+    task_id = await _completed_task_in_repo(client, headers, str(repo))
+
+    prepared = await client.post(f"/tasks/{task_id}/git/prepare", headers=headers)
+    git_operation_id = prepared.json()["id"]
+
+    confirmed = await client.post(
+        f"/tasks/{task_id}/git/{git_operation_id}/confirm",
+        headers=headers,
+        json={"commit_message": "First push"},
     )
-    assert remote_log.stdout.strip() == "Add feature.txt"
+    assert confirmed.status_code == 200
+    body = confirmed.json()
+    assert body["status"] == "completed"
+    assert body["error_message"] is None
+
+    remote_log_stdout = await _git_output("log", "-1", "--pretty=%s", "main", cwd=str(bare_remote))
+    assert remote_log_stdout.strip() == "First push"
 
 
 async def test_confirm_fails_gracefully_when_no_remote_configured(
@@ -168,14 +211,8 @@ async def test_confirm_fails_gracefully_when_no_remote_configured(
     assert body["error_message"]
 
     # The commit itself (before the failing push) should have landed locally.
-    log = subprocess.run(
-        ["git", "log", "-1", "--pretty=%s"],
-        cwd=str(scratch_repo),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    assert "Phodex:" in log.stdout
+    log_stdout = await _git_output("log", "-1", "--pretty=%s", cwd=str(scratch_repo))
+    assert "Phodex:" in log_stdout
 
 
 async def test_discard_leaves_repo_untouched(client: AsyncClient, login, scratch_repo):
@@ -192,14 +229,8 @@ async def test_discard_leaves_repo_untouched(client: AsyncClient, login, scratch
     assert discarded.status_code == 200
     assert discarded.json()["status"] == "rejected"
 
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=str(scratch_repo),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    assert "draft.txt" in status.stdout
+    status_stdout = await _git_output("status", "--porcelain", cwd=str(scratch_repo))
+    assert "draft.txt" in status_stdout
 
 
 async def test_confirm_twice_conflicts(client: AsyncClient, login, scratch_repo_with_remote):

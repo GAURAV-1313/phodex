@@ -21,5 +21,13 @@ plugins = []
 exclude = ["alembic"]
 
 [[tool.mypy.overrides]]
-module = ["google.*", "jose.*", "alembic.*"]
+module = [
+    "google.*",
+    "jose.*",
+    "alembic.*",
+    "passlib.*",
+    "prometheus_client.*",
+    "redis.*",
+    "qrcode.*",
+]
 ignore_missing_imports = true

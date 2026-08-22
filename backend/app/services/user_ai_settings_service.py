@@ -28,9 +28,10 @@ class UserAiSettingsService:
     async def get_decrypted(self, user_id: UUID) -> UserAiSettings | None:
         """Internal use only (subprocess env building) — never expose decrypted keys over the API."""
         async with self._session_factory() as session:
-            return await session.scalar(
+            row: UserAiSettings | None = await session.scalar(
                 select(UserAiSettings).where(UserAiSettings.user_id == user_id)
             )
+            return row
 
     def decrypt_anthropic_key(self, settings_row: UserAiSettings) -> str | None:
         if not settings_row.anthropic_api_key_encrypted:

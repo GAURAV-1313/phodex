@@ -10,6 +10,7 @@ from app.models.enums import ApprovalStatus, TaskStatus
 from app.models.session import Session
 from app.models.task import Task
 from app.models.task_event import TaskEvent
+from app.services.exceptions import NotFoundError
 from app.services.redis_service import RedisService
 from app.utils.datetime import utcnow
 
@@ -114,6 +115,44 @@ class AccountService:
 
     async def invalidate_usage(self, user_id: UUID) -> None:
         await self._redis.delete(f"account:usage:{user_id}")
+
+    async def list_sessions(self, user_id: UUID) -> list[Session]:
+        async with self._session_factory() as session:
+            result = await session.scalars(
+                select(Session)
+                .where(
+                    Session.user_id == user_id,
+                    Session.revoked_at.is_(None),
+                    Session.expires_at > utcnow(),
+                )
+                .order_by(Session.created_at.desc())
+            )
+            return list(result.all())
+
+    async def revoke_session(self, user_id: UUID, session_id: UUID) -> None:
+        async with self._session_factory() as session:
+            db_session = await session.get(Session, session_id)
+            if db_session is None or db_session.user_id != user_id:
+                raise NotFoundError("Session not found")
+            if db_session.revoked_at is None:
+                db_session.revoked_at = utcnow()
+                await session.commit()
+
+    async def revoke_other_sessions(self, user_id: UUID, keep_session_id: UUID) -> int:
+        async with self._session_factory() as session:
+            result = await session.scalars(
+                select(Session).where(
+                    Session.user_id == user_id,
+                    Session.id != keep_session_id,
+                    Session.revoked_at.is_(None),
+                )
+            )
+            sessions = list(result.all())
+            now = utcnow()
+            for db_session in sessions:
+                db_session.revoked_at = now
+            await session.commit()
+            return len(sessions)
 
     async def limits(self, user_id: UUID) -> LimitStatus:
         usage = await self.usage_summary(user_id)

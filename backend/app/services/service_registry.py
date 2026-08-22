@@ -8,6 +8,7 @@ from app.services.device_service import DeviceService
 from app.services.event_service import EventService
 from app.services.git_service import GitService
 from app.services.google_auth_service import GoogleAuthService
+from app.services.push_service import PushService
 from app.services.redis_service import RedisService
 from app.services.repo_sync_service import RepoSyncService
 from app.services.task_service import TaskService
@@ -29,4 +30,5 @@ class ServiceRegistry:
     worker_dispatcher: WorkerDispatcher
     git_service: GitService
     user_ai_settings_service: UserAiSettingsService
+    push_service: PushService
     redis: RedisService

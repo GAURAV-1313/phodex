@@ -46,6 +46,7 @@ class _ReposScreenState extends ConsumerState<ReposScreen> {
               style: AppTypography.display(
                 fontSize: AppTypeScale.displayLarge,
                 letterSpacing: -1,
+                color: context.colors.textPrimary,
               ),
             ),
             const SizedBox(height: 28),
@@ -55,7 +56,7 @@ class _ReposScreenState extends ConsumerState<ReposScreen> {
               decoration: InputDecoration(
                 hintText: 'Search repositories…',
                 prefixIcon: const Icon(Icons.search),
-                fillColor: AppColors.bgInput,
+                fillColor: context.colors.bgInput,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -85,15 +86,16 @@ class _ReposScreenState extends ConsumerState<ReposScreen> {
                           'No repositories yet',
                           style: AppTypography.display(
                             fontSize: AppTypeScale.title,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           'Open Phodex on your desktop and sync a workspace to get started.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: AppTypeScale.body,
-                            color: AppColors.textSecondary,
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -111,15 +113,16 @@ class _ReposScreenState extends ConsumerState<ReposScreen> {
                           'No matching repositories',
                           style: AppTypography.display(
                             fontSize: AppTypeScale.title,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           'Nothing named "$_query". Try a different search.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: AppTypeScale.body,
-                            color: AppColors.textSecondary,
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -182,12 +185,12 @@ class _RepoCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7F2FF),
+                  color: context.colors.accentPrimarySoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.folder_outlined,
-                  color: AppColors.accentPrimary,
+                  color: context.colors.accentPrimary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -201,7 +204,7 @@ class _RepoCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted),
+              Icon(Icons.chevron_right, color: context.colors.textMuted),
             ],
           ),
           const SizedBox(height: 22),
@@ -218,8 +221,8 @@ class _RepoCard extends StatelessWidget {
                 Icons.sync_rounded,
                 repo.isActive ? 'In sync' : 'Needs sync',
                 color: repo.isActive
-                    ? AppColors.accentPrimary
-                    : AppColors.accentError,
+                    ? context.colors.accentPrimary
+                    : context.colors.accentError,
               ),
             ],
           ),
@@ -235,19 +238,22 @@ class _RepoCard extends StatelessWidget {
 }
 
 class _Meta extends StatelessWidget {
-  const _Meta(this.icon, this.label, {this.color = AppColors.textSecondary});
+  const _Meta(this.icon, this.label, {this.color});
   final IconData icon;
   final String label;
-  final Color color;
+  final Color? color;
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 18, color: color),
-      const SizedBox(width: 6),
-      Text(label, style: TextStyle(fontSize: 16, color: color)),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final resolvedColor = color ?? context.colors.textSecondary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: resolvedColor),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: 16, color: resolvedColor)),
+      ],
+    );
+  }
 }
 
 class RepositoryDetailScreen extends ConsumerWidget {
@@ -295,10 +301,10 @@ class RepositoryDetailScreen extends ConsumerWidget {
                   selectedRepo.currentBranch ??
                       selectedRepo.defaultBranch ??
                       'main',
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: context.colors.textSecondary),
                 ),
                 const Divider(height: 32),
-                _DetailRow('Desktop runtime', selectedRepo.deviceId),
+                _DetailRow('Desktop runtime', selectedRepo.deviceName),
                 _DetailRow(
                   'Sync status',
                   selectedRepo.isActive ? 'Connected' : 'Disconnected',
@@ -335,7 +341,7 @@ class _DetailRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
         ),
         Expanded(

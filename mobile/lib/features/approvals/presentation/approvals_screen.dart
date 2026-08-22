@@ -15,7 +15,7 @@ class ApprovalsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(approvalsProvider);
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: SafeArea(
         child: value.when(
           data: (items) => ListView(
@@ -39,16 +39,17 @@ class ApprovalsScreen extends ConsumerWidget {
                   style: AppTypography.display(
                     fontSize: AppTypeScale.displayLarge,
                     letterSpacing: -1,
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Your AI engineer needs permission to continue an important action.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: AppTypeScale.subhead,
                     height: 1.45,
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 58),
@@ -60,9 +61,16 @@ class ApprovalsScreen extends ConsumerWidget {
                       onApprove: () => ref
                           .read(approvalsProvider.notifier)
                           .approve(approvalId: item.id),
-                      onReject: () => ref
-                          .read(approvalsProvider.notifier)
-                          .reject(approvalId: item.id),
+                      onReject: () async {
+                        final reason = await showRejectReasonDialog(context);
+                        if (reason == null) return;
+                        await ref
+                            .read(approvalsProvider.notifier)
+                            .reject(
+                              approvalId: item.id,
+                              note: reason.isEmpty ? null : reason,
+                            );
+                      },
                       onTask: () => context.go('/session/${item.taskId}'),
                     ),
                   ),
@@ -91,14 +99,17 @@ class _NoApprovals extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'Nothing needs your approval',
-          style: AppTypography.display(fontSize: AppTypeScale.title),
+          style: AppTypography.display(
+            fontSize: AppTypeScale.title,
+            color: context.colors.textPrimary,
+          ),
         ),
         const SizedBox(height: 10),
-        const Text(
+        Text(
           'Your agent will pause here whenever it needs a decision.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
             fontSize: AppTypeScale.body,
           ),
         ),
@@ -140,19 +151,19 @@ class _ApprovalReview extends StatelessWidget {
                   color: const Color(0xFFE7F2FF),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.terminal_rounded,
-                  color: AppColors.accentPrimary,
+                  color: context.colors.accentPrimary,
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   kindLabel.isEmpty ? 'ACTION' : kindLabel.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     letterSpacing: 1.3,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted,
+                    color: context.colors.textMuted,
                   ),
                 ),
               ),
@@ -162,12 +173,12 @@ class _ApprovalReview extends StatelessWidget {
           const SizedBox(height: 22),
           const Divider(),
           const SizedBox(height: 22),
-          const Text(
+          Text(
             'TASK DESCRIPTION',
             style: TextStyle(
               letterSpacing: 1.3,
               fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
+              color: context.colors.textMuted,
             ),
           ),
           const SizedBox(height: 10),
@@ -180,12 +191,12 @@ class _ApprovalReview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             'REQUESTED ACTION',
             style: TextStyle(
               letterSpacing: 1.3,
               fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
+              color: context.colors.textMuted,
             ),
           ),
           const SizedBox(height: 12),
@@ -193,7 +204,7 @@ class _ApprovalReview extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.bgInput,
+              color: context.colors.bgInput,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Text(
@@ -202,17 +213,17 @@ class _ApprovalReview extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTypography.code(
                 fontSize: 15,
-                color: AppColors.accentPrimary,
+                color: context.colors.accentPrimary,
               ),
             ),
           ),
           const SizedBox(height: 20),
           Text(
             approval.description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               height: 1.5,
-              color: AppColors.textSecondary,
+              color: context.colors.textSecondary,
             ),
           ),
           const SizedBox(height: 22),
@@ -231,7 +242,7 @@ class _ApprovalReview extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onReject,
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.borderSubtle),
+                      side: BorderSide(color: context.colors.borderSubtle),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
                       ),
@@ -262,9 +273,9 @@ class _RiskBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (risk.toLowerCase()) {
-      'low' => AppColors.accentSuccess,
-      'high' || 'critical' => AppColors.accentError,
-      _ => AppColors.accentWarning,
+      'low' => context.colors.accentSuccess,
+      'high' || 'critical' => context.colors.accentError,
+      _ => context.colors.accentWarning,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

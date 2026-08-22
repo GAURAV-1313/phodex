@@ -25,4 +25,21 @@ class NetworkAccountRepository implements AccountRepository {
     final json = await _apiClient.getJson('/account/usage');
     return UsageSummaryResponseDto.fromJson(json).toDomain();
   }
+
+  @override
+  Future<List<SessionInfo>> listSessions() async {
+    final json = await _apiClient.getJson('/account/sessions');
+    return SessionsResponseDto.fromJson(json).toDomain();
+  }
+
+  @override
+  Future<void> revokeSession(String sessionId) async {
+    await _apiClient.postJson('/account/sessions/$sessionId/revoke');
+  }
+
+  @override
+  Future<int> revokeOtherSessions() async {
+    final json = await _apiClient.postJson('/account/sessions/revoke-others');
+    return json['revoked_count'] as int;
+  }
 }

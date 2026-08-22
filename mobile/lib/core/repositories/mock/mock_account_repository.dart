@@ -24,4 +24,22 @@ class MockAccountRepository implements AccountRepository {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     return _store.getUsageSummary();
   }
+
+  @override
+  Future<List<SessionInfo>> listSessions() async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return _store.listSessions();
+  }
+
+  @override
+  Future<void> revokeSession(String sessionId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    _store.revokeSession(sessionId);
+  }
+
+  @override
+  Future<int> revokeOtherSessions() async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return _store.revokeOtherSessions();
+  }
 }

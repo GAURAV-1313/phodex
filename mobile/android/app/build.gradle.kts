@@ -42,3 +42,11 @@ android {
 flutter {
     source = "../.."
 }
+
+// Push notifications need this plugin (it reads google-services.json to
+// wire up this app's Firebase project), but applying it without that file
+// present fails the build outright — so only apply it once the file
+// actually exists, i.e. after `flutterfire configure` has been run.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}

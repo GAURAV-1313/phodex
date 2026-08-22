@@ -6,6 +6,7 @@ class SyncedRepositoryOutDto {
     required this.id,
     required this.userId,
     required this.deviceId,
+    required this.deviceName,
     required this.name,
     required this.localPath,
     required this.gitRoot,
@@ -22,6 +23,7 @@ class SyncedRepositoryOutDto {
   final String id;
   final String userId;
   final String deviceId;
+  final String deviceName;
   final String name;
   final String localPath;
   final String gitRoot;
@@ -39,6 +41,7 @@ class SyncedRepositoryOutDto {
       id: json['id'] as String,
       userId: json['user_id'] as String,
       deviceId: json['device_id'] as String,
+      deviceName: json['device_name'] as String,
       name: json['name'] as String,
       localPath: json['local_path'] as String,
       gitRoot: json['git_root'] as String,
@@ -60,6 +63,7 @@ class SyncedRepositoryOutDto {
       id: id,
       userId: userId,
       deviceId: deviceId,
+      deviceName: deviceName,
       name: name,
       localPath: localPath,
       gitRoot: gitRoot,

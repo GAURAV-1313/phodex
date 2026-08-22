@@ -9,6 +9,7 @@ from app.models.enums import ApprovalStatus, TaskStatus
 from app.models.task import Task
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, NotFoundError
+from app.services.push_service import PushService
 from app.services.redis_service import RedisService
 from app.utils.datetime import utcnow
 
@@ -22,10 +23,12 @@ class ApprovalService:
         session_factory: async_sessionmaker[AsyncSession],
         event_service: EventService,
         redis: RedisService,
+        push_service: PushService,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
         self._redis = redis
+        self._push_service = push_service
         self._worker_dispatcher: WorkerDispatcher | None = None
 
     def set_worker_dispatcher(self, dispatcher: "WorkerDispatcher") -> None:
@@ -51,6 +54,8 @@ class ApprovalService:
             session.add(approval)
             await session.commit()
             await session.refresh(approval)
+            task = await session.get(Task, task_id)
+            user_id = task.user_id if task is not None else None
 
         await self._event_service.append_event(
             task_id,
@@ -62,6 +67,18 @@ class ApprovalService:
                 "description": description,
             },
         )
+
+        if user_id is not None:
+            await self._push_service.notify_user(
+                user_id,
+                title="Approval needed",
+                body=title,
+                data={
+                    "task_id": str(task_id),
+                    "approval_id": str(approval.id),
+                    "type": "approval.requested",
+                },
+            )
 
         return approval
 

@@ -5,6 +5,9 @@ import 'package:mobile/features/account/application/account_controller.dart';
 import 'package:mobile/features/welcome/application/auth_controller.dart';
 import 'package:mobile/shared/theme/theme.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+const _supportUrl = 'https://github.com/GAURAV-1313/phodex/issues/new';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -21,7 +24,12 @@ class AccountScreen extends ConsumerWidget {
             final user = dashboard.summary.user;
             final runtimeLive = dashboard.summary.deviceOnline;
             return ListView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, stitchDockClearance),
+              padding: const EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                stitchDockClearance,
+              ),
               children: [
                 StitchHeader(onBell: () => context.push('/approvals')),
                 const SizedBox(height: 44),
@@ -30,16 +38,17 @@ class AccountScreen extends ConsumerWidget {
                   style: AppTypography.display(
                     fontSize: AppTypeScale.displayLarge,
                     letterSpacing: -1,
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 28),
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 52,
-                  backgroundColor: AppColors.bgInput,
+                  backgroundColor: context.colors.bgInput,
                   child: Icon(
                     Icons.person_outline,
                     size: 52,
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -55,9 +64,9 @@ class AccountScreen extends ConsumerWidget {
                 Text(
                   user.email,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    color: AppColors.textSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 42),
@@ -72,7 +81,7 @@ class AccountScreen extends ConsumerWidget {
                         style: AppTypography.display(
                           fontSize: AppTypeScale.displayLarge,
                           letterSpacing: -1,
-                          color: AppColors.accentPrimary,
+                          color: context.colors.accentPrimary,
                         ),
                       ),
                       const Text(
@@ -110,8 +119,8 @@ class AccountScreen extends ConsumerWidget {
                               Icons.circle,
                               size: 10,
                               color: runtimeLive
-                                  ? AppColors.accentSuccess
-                                  : AppColors.textMuted,
+                                  ? context.colors.accentSuccess
+                                  : context.colors.textMuted,
                             ),
                           ),
                         ],
@@ -129,23 +138,23 @@ class AccountScreen extends ConsumerWidget {
                         runtimeLive
                             ? 'Connected and ready for tasks'
                             : 'No active agent session',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: AppColors.textSecondary,
+                          color: context.colors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const Row(
+                      Row(
                         children: [
                           Icon(
                             Icons.terminal_rounded,
-                            color: AppColors.accentPrimary,
+                            color: context.colors.accentPrimary,
                           ),
-                          SizedBox(width: 9),
+                          const SizedBox(width: 9),
                           Text(
                             'Host-run worker',
                             style: TextStyle(
-                              color: AppColors.accentPrimary,
+                              color: context.colors.accentPrimary,
                               fontSize: 16,
                             ),
                           ),
@@ -168,33 +177,27 @@ class AccountScreen extends ConsumerWidget {
                       ),
                       const Divider(height: 1),
                       _Setting(
+                        icon: Icons.desktop_windows_outlined,
+                        label: 'Desktop connection',
+                        onTap: () => context.push('/connect-desktop'),
+                      ),
+                      const Divider(height: 1),
+                      _Setting(
                         icon: Icons.notifications_none_rounded,
                         label: 'Notifications',
-                        onTap: () => _showComingSoon(
-                          context,
-                          'Notifications',
-                          'Push notification preferences aren\'t wired up yet — pending approvals still show live via the bell icon.',
-                        ),
+                        onTap: () => context.push('/account/notifications'),
                       ),
                       const Divider(height: 1),
                       _Setting(
                         icon: Icons.palette_outlined,
                         label: 'Appearance',
-                        onTap: () => _showComingSoon(
-                          context,
-                          'Appearance',
-                          'Dark mode isn\'t built yet — Phodex currently ships with one considered light theme.',
-                        ),
+                        onTap: () => _showAppearancePicker(context, ref),
                       ),
                       const Divider(height: 1),
                       _Setting(
                         icon: Icons.lock_outline,
                         label: 'Privacy & security',
-                        onTap: () => _showComingSoon(
-                          context,
-                          'Privacy & security',
-                          'Session management and data controls are coming in a future update.',
-                        ),
+                        onTap: () => context.push('/account/sessions'),
                       ),
                     ],
                   ),
@@ -205,11 +208,7 @@ class AccountScreen extends ConsumerWidget {
                   child: _Setting(
                     icon: Icons.help_outline,
                     label: 'Support center',
-                    onTap: () => _showComingSoon(
-                      context,
-                      'Support center',
-                      'No support channel is configured yet. For now, reach out to whoever runs your Phodex backend.',
-                    ),
+                    onTap: () => _openSupportCenter(context),
                   ),
                 ),
                 const SizedBox(height: 34),
@@ -219,20 +218,20 @@ class AccountScreen extends ConsumerWidget {
                       await ref.read(authControllerProvider.notifier).signOut();
                       if (context.mounted) context.go('/welcome');
                     },
-                    child: const Text(
+                    child: Text(
                       'Sign out',
                       style: TextStyle(
-                        color: AppColors.accentError,
+                        color: context.colors.accentError,
                         fontSize: 17,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Center(
+                Center(
                   child: Text(
                     'Phodex local build',
-                    style: TextStyle(color: AppColors.textMuted),
+                    style: TextStyle(color: context.colors.textMuted),
                   ),
                 ),
               ],
@@ -241,7 +240,8 @@ class AccountScreen extends ConsumerWidget {
           loading: () => const PhodexLoading(),
           error: (error, _) => StitchErrorState(
             title: "Couldn't load your account",
-            onRetry: () => ref.read(accountDashboardProvider.notifier).refresh(),
+            onRetry: () =>
+                ref.read(accountDashboardProvider.notifier).refresh(),
           ),
         ),
       ),
@@ -256,7 +256,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     label.toUpperCase(),
-    style: const TextStyle(letterSpacing: 1.5, color: AppColors.textSecondary),
+    style: TextStyle(letterSpacing: 1.5, color: context.colors.textSecondary),
   );
 }
 
@@ -276,63 +276,129 @@ class _Setting extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.bgInput,
+              color: context.colors.bgInput,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon),
           ),
           const SizedBox(width: 16),
           Expanded(child: Text(label, style: const TextStyle(fontSize: 17))),
-          const Icon(Icons.chevron_right, color: AppColors.textMuted),
+          Icon(Icons.chevron_right, color: context.colors.textMuted),
         ],
       ),
     ),
   );
 }
 
-void _showComingSoon(BuildContext context, String title, String message) {
+Future<void> _openSupportCenter(BuildContext context) async {
+  final uri = Uri.parse(_supportUrl);
+  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!opened && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open the support page')),
+    );
+  }
+}
+
+void _showAppearancePicker(BuildContext context, WidgetRef ref) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
-    builder: (_) => Container(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    builder: (sheetContext) => Consumer(
+      builder: (sheetContext, ref, _) {
+        final current = ref.watch(themeModeProvider);
+        return Container(
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
+          decoration: BoxDecoration(
+            color: sheetContext.colors.bgSurface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: sheetContext.colors.borderSubtle,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Text(
+                'Appearance',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 18),
+              for (final option in const [
+                (ThemeMode.system, 'System', Icons.brightness_auto_outlined),
+                (ThemeMode.light, 'Light', Icons.light_mode_outlined),
+                (ThemeMode.dark, 'Dark', Icons.dark_mode_outlined),
+              ])
+                _AppearanceOption(
+                  mode: option.$1,
+                  label: option.$2,
+                  icon: option.$3,
+                  selected: current == option.$1,
+                  onTap: () {
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(option.$1);
+                    Navigator.pop(sheetContext);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class _AppearanceOption extends StatelessWidget {
+  const _AppearanceOption({
+    required this.mode,
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ThemeMode mode;
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
         children: [
-          Center(
-            child: Container(
-              width: 42,
-              height: 5,
-              decoration: BoxDecoration(
-                color: AppColors.borderSubtle,
-                borderRadius: BorderRadius.circular(5),
+          Icon(
+            icon,
+            color: selected
+                ? context.colors.accentPrimary
+                : context.colors.textSecondary,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ),
-          const SizedBox(height: 22),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            message,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          StitchPrimaryButton(
-            label: 'Got it',
-            onPressed: () => Navigator.pop(context),
-          ),
+          if (selected)
+            Icon(Icons.check_rounded, color: context.colors.accentPrimary),
         ],
       ),
     ),

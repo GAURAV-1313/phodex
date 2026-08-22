@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd mobile && flutter run -d chrome --web-port 5959 --dart-define=PHODEX_USE_NETWORK=false"
+      ],
+      "port": 5959
+    }
+  ]
+}

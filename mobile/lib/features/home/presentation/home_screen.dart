@@ -97,16 +97,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Icons.circle,
                             size: 10,
                             color: isConnected
-                                ? AppColors.accentSuccess
-                                : AppColors.accentWarning,
+                                ? context.colors.accentSuccess
+                                : context.colors.accentWarning,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             isConnected
                                 ? 'Desktop runtime connected'
                                 : 'Reconnecting…',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
                             ),
                           ),
                         ],
@@ -130,14 +130,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   fontSize: 36,
                   height: 1.12,
                   letterSpacing: -0.6,
+                  color: context.colors.textPrimary,
                 ),
-                children: const [
-                  TextSpan(text: 'What should your '),
+                children: [
+                  const TextSpan(text: 'What should your '),
                   TextSpan(
                     text: 'AI engineer',
-                    style: TextStyle(color: AppColors.accentPrimary),
+                    style: TextStyle(color: context.colors.accentPrimary),
                   ),
-                  TextSpan(text: ' build today?'),
+                  const TextSpan(text: ' build today?'),
                 ],
               ),
             ),
@@ -147,11 +148,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onTap: () => _pickRepository(context),
             ),
             const SizedBox(height: 40),
-            const Text(
+            Text(
               'SUGGESTED FLOWS',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: AppColors.textMuted,
+                color: context.colors.textMuted,
                 letterSpacing: 1.3,
               ),
             ),
@@ -191,7 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(18, 12, 8, 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.bgCard,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: const [
                   BoxShadow(color: Color(0x0A000000), blurRadius: 24),
@@ -222,7 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     color: Colors.white,
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.accentPrimary,
+                      backgroundColor: context.colors.accentPrimary,
                     ),
                   ),
                 ],
@@ -248,10 +249,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _RepositoryPicker(repos: repos),
     );
-    if (selected != null)
+    if (selected != null) {
       await ref
           .read(repositoriesProvider.notifier)
           .selectRepository(repoId: selected.id);
+    }
   }
 }
 
@@ -272,16 +274,16 @@ class _RepositoryBar extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 18)],
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.folder_outlined,
             size: 20,
-            color: AppColors.accentPrimary,
+            color: context.colors.accentPrimary,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -292,10 +294,10 @@ class _RepositoryBar extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
           ),
-          const Icon(
+          Icon(
             Icons.unfold_more_rounded,
             size: 18,
-            color: AppColors.textMuted,
+            color: context.colors.textMuted,
           ),
         ],
       ),
@@ -340,9 +342,9 @@ class _Suggestion extends StatelessWidget {
     padding: const EdgeInsets.only(right: 10),
     child: ActionChip(
       onPressed: onTap,
-      avatar: Icon(icon, color: AppColors.accentPrimary),
+      avatar: Icon(icon, color: context.colors.accentPrimary),
       label: Text(label, style: const TextStyle(fontSize: 16)),
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.bgCard,
       shape: const StadiumBorder(),
     ),
   );
@@ -358,13 +360,13 @@ class _CurrentTask extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'CURRENT TASK',
           style: TextStyle(
             fontSize: AppTypeScale.micro,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.1,
-            color: AppColors.textSecondary,
+            color: context.colors.textSecondary,
           ),
         ),
         const SizedBox(height: 14),
@@ -375,12 +377,13 @@ class _CurrentTask extends StatelessWidget {
           style: AppTypography.display(
             fontSize: AppTypeScale.title,
             letterSpacing: -.5,
+            color: context.colors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Text(
           task.currentPhase ?? 'Agent is working…',
-          style: const TextStyle(fontSize: 17, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 17, color: context.colors.textSecondary),
         ),
         const SizedBox(height: 20),
         LinearProgressIndicator(
@@ -399,9 +402,9 @@ class _RepositoryPicker extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: MediaQuery.sizeOf(context).height * .78,
     padding: const EdgeInsets.all(28),
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+    decoration: BoxDecoration(
+      color: context.colors.bgSurface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,7 +414,7 @@ class _RepositoryPicker extends StatelessWidget {
             width: 42,
             height: 5,
             decoration: BoxDecoration(
-              color: AppColors.borderSubtle,
+              color: context.colors.borderSubtle,
               borderRadius: BorderRadius.circular(5),
             ),
           ),
@@ -422,7 +425,10 @@ class _RepositoryPicker extends StatelessWidget {
             Expanded(
               child: Text(
                 'Select Repository',
-                style: AppTypography.display(fontSize: AppTypeScale.headline),
+                style: AppTypography.display(
+                  fontSize: AppTypeScale.headline,
+                  color: context.colors.textPrimary,
+                ),
               ),
             ),
             IconButton(
@@ -436,7 +442,7 @@ class _RepositoryPicker extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Search repositories…',
             prefixIcon: const Icon(Icons.search),
-            fillColor: AppColors.bgInput,
+            fillColor: context.colors.bgInput,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
               borderSide: BorderSide.none,
@@ -457,12 +463,12 @@ class _RepositoryPicker extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F2FF),
+                        color: context.colors.accentPrimarySoft,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.folder_outlined,
-                        color: AppColors.accentPrimary,
+                        color: context.colors.accentPrimary,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -479,16 +485,16 @@ class _RepositoryPicker extends StatelessWidget {
                           ),
                           Text(
                             repo.currentBranch ?? repo.defaultBranch ?? 'main',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.radio_button_unchecked,
-                      color: AppColors.textMuted,
+                      color: context.colors.textMuted,
                     ),
                   ],
                 ),

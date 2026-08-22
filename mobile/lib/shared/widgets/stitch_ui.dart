@@ -33,14 +33,14 @@ class StitchScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: SafeArea(
         child: Stack(
           children: [
             Positioned.fill(child: child),
             // Fades scrolled content out before it reaches the dock, so
             // anything passing underneath never looks abruptly clipped.
-            const Positioned(
+            Positioned(
               left: 0,
               right: 0,
               bottom: 0,
@@ -52,10 +52,10 @@ class StitchScaffold extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Color(0x00FBF9F7),
-                        AppColors.bgPrimary,
+                        context.colors.bgPrimary.withValues(alpha: 0),
+                        context.colors.bgPrimary,
                       ],
-                      stops: [0.0, 0.62],
+                      stops: const [0.0, 0.62],
                     ),
                   ),
                 ),
@@ -107,8 +107,10 @@ class StitchDock extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .78),
-              border: Border.all(color: Colors.white.withValues(alpha: .6)),
+              color: context.colors.bgSurface.withValues(alpha: .78),
+              border: Border.all(
+                color: context.colors.bgSurface.withValues(alpha: .6),
+              ),
               borderRadius: BorderRadius.circular(36),
             ),
             child: Row(
@@ -125,15 +127,15 @@ class StitchDock extends StatelessWidget {
                             PhodexMascotGlyph(
                               size: 24,
                               color: active == item.$1
-                                  ? AppColors.accentPrimary
-                                  : AppColors.textSecondary,
+                                  ? context.colors.accentPrimary
+                                  : context.colors.textSecondary,
                             )
                           else
                             Icon(
                               item.$2,
                               color: active == item.$1
-                                  ? AppColors.accentPrimary
-                                  : AppColors.textSecondary,
+                                  ? context.colors.accentPrimary
+                                  : context.colors.textSecondary,
                             ),
                           const SizedBox(height: 3),
                           Text(
@@ -142,8 +144,8 @@ class StitchDock extends StatelessWidget {
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: active == item.$1
-                                  ? AppColors.accentPrimary
-                                  : AppColors.textSecondary,
+                                  ? context.colors.accentPrimary
+                                  : context.colors.textSecondary,
                             ),
                           ),
                         ],
@@ -175,9 +177,9 @@ class StitchHeader extends StatelessWidget {
       if (onBack != null)
         IconButton(
           onPressed: onBack,
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppColors.accentPrimary,
+            color: context.colors.accentPrimary,
           ),
         )
       else
@@ -190,6 +192,7 @@ class StitchHeader extends StatelessWidget {
             style: AppTypography.display(
               fontSize: AppTypeScale.headline,
               letterSpacing: -.8,
+              color: context.colors.textPrimary,
             ),
           ),
         )
@@ -219,7 +222,7 @@ class StitchCard extends StatelessWidget {
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: context.colors.bgCard,
     borderRadius: BorderRadius.circular(24),
     child: InkWell(
       borderRadius: BorderRadius.circular(24),
@@ -264,7 +267,7 @@ class StitchPrimaryButton extends StatelessWidget {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
       ),
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accentPrimary,
+        backgroundColor: context.colors.accentPrimary,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
@@ -272,11 +275,11 @@ class StitchPrimaryButton extends StatelessWidget {
   );
 }
 
-Color taskStatusColor(String value) => switch (value) {
-  'completed' => AppColors.accentSuccess,
-  'waiting_approval' => AppColors.accentWarning,
-  'failed' => AppColors.accentError,
-  _ => AppColors.accentPrimary,
+Color taskStatusColor(AppColors colors, String value) => switch (value) {
+  'completed' => colors.accentSuccess,
+  'waiting_approval' => colors.accentWarning,
+  'failed' => colors.accentError,
+  _ => colors.accentPrimary,
 };
 
 /// Friendly error state for async views — never surfaces the raw exception
@@ -311,7 +314,7 @@ class StitchErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 15, color: context.colors.textSecondary),
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 24),
@@ -320,7 +323,7 @@ class StitchErrorState extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Try again'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.accentPrimary,
+                foregroundColor: context.colors.accentPrimary,
                 textStyle: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -330,6 +333,39 @@ class StitchErrorState extends StatelessWidget {
           ],
         ],
       ),
+    ),
+  );
+}
+
+/// Prompts for an optional reason before rejecting an approval. Returns
+/// `null` if the user cancelled (caller should not reject at all), or the
+/// trimmed reason text (possibly empty, meaning "confirmed, no reason
+/// given") if they pressed Reject.
+Future<String?> showRejectReasonDialog(BuildContext context) {
+  final controller = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Reject this action?'),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          hintText:
+              'Reason (optional) — helps your agent try a better approach',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+          child: const Text('Reject'),
+        ),
+      ],
     ),
   );
 }

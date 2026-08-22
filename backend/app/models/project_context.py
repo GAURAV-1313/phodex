@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import JSON, Enum, ForeignKey, String, Uuid
+from sqlalchemy import JSON, Boolean, Enum, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -27,6 +27,7 @@ class ProjectContext(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     repo_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     branch: Mapped[str | None] = mapped_column(String(255), nullable=True)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     user = relationship("User", back_populates="project_contexts")
     synced_repository = relationship("SyncedRepository", back_populates="project_contexts")

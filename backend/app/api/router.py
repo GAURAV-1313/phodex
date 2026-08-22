@@ -8,6 +8,8 @@ from app.api import (
     devices,
     git_ops,
     health,
+    pairing,
+    push,
     repos,
     stream,
     tasks,
@@ -24,3 +26,5 @@ api_router.include_router(devices.router)
 api_router.include_router(repos.router)
 api_router.include_router(stream.router)
 api_router.include_router(health.router)
+api_router.include_router(pairing.router)
+api_router.include_router(push.router)

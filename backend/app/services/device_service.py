@@ -78,7 +78,7 @@ class DeviceService:
 
     async def get_most_recent(self, user_id: UUID) -> Device | None:
         async with self._session_factory() as session:
-            return await session.scalar(
+            return await session.scalar(  # type: ignore[no-any-return]
                 select(Device)
                 .where(Device.user_id == user_id)
                 .order_by(Device.last_seen_at.desc().nulls_last())

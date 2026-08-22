@@ -11,6 +11,13 @@ class NetworkRepoRepository implements RepoRepository {
 
   @override
   Future<ProjectContext?> getSelectedProjectContext() async {
+    if (_selectedContext != null) return _selectedContext;
+    final json = await _apiClient.getJson('/repos/context/current');
+    final projectContextJson = json['project_context'] as Map<String, dynamic>?;
+    if (projectContextJson == null) return null;
+    _selectedContext = ProjectContextOutDto.fromJson(
+      projectContextJson,
+    ).toDomain();
     return _selectedContext;
   }
 

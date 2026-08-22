@@ -4,10 +4,7 @@ import 'package:go_router/go_router.dart';
 /// A soft cross-fade + scale — used for top-level tab-style destinations
 /// (Home, Tasks, Repos, Account) where screens feel like siblings, not a
 /// hierarchy, so a slide would misleadingly imply "going deeper."
-CustomTransitionPage<void> fadeThroughPage(
-  Widget child,
-  GoRouterState state,
-) {
+CustomTransitionPage<void> fadeThroughPage(Widget child, GoRouterState state) {
   return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,

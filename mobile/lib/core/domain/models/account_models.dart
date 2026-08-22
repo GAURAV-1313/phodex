@@ -46,6 +46,20 @@ class UsageSummary {
   final int activeSessions;
 }
 
+class SessionInfo {
+  const SessionInfo({
+    required this.id,
+    required this.createdAt,
+    required this.expiresAt,
+    required this.isCurrent,
+  });
+
+  final String id;
+  final DateTime createdAt;
+  final DateTime expiresAt;
+  final bool isCurrent;
+}
+
 class LimitStatus {
   const LimitStatus({
     required this.generatedAt,

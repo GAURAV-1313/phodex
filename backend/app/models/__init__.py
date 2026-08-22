@@ -3,6 +3,7 @@ from app.models.artifact import Artifact
 from app.models.device import Device
 from app.models.git_operation import GitOperation
 from app.models.project_context import ProjectContext
+from app.models.push_subscription import PushSubscription
 from app.models.session import Session
 from app.models.synced_repository import SyncedRepository
 from app.models.task import Task
@@ -17,6 +18,7 @@ __all__ = [
     "Device",
     "GitOperation",
     "ProjectContext",
+    "PushSubscription",
     "Session",
     "SyncedRepository",
     "Task",

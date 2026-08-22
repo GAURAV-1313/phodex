@@ -14,6 +14,7 @@ from app.models.task_message import TaskMessage
 from app.schemas.tasks import TaskEventEnvelope, TaskIssueOut
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, LimitExceededError, NotFoundError
+from app.services.push_service import PushService
 from app.services.redis_service import RedisService
 from app.utils.datetime import utcnow
 
@@ -28,11 +29,13 @@ class TaskService:
         event_service: EventService,
         settings: Settings,
         redis: RedisService,
+        push_service: PushService,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
         self._settings = settings
         self._redis = redis
+        self._push_service = push_service
         self._worker_dispatcher: WorkerDispatcher | None = None
 
     def set_worker_dispatcher(self, dispatcher: "WorkerDispatcher") -> None:
@@ -305,6 +308,7 @@ class TaskService:
             user_id = task.user_id
             started_at = task.started_at
             finished_at = task.finished_at
+            task_title = task.title or task.prompt
 
         TASK_TRANSITIONS.labels(status=status.value).inc()
         if (
@@ -316,6 +320,22 @@ class TaskService:
                 max((finished_at - started_at).total_seconds(), 0)
             )
         await self._invalidate_usage(user_id)
+
+        if status == TaskStatus.COMPLETED:
+            await self._push_service.notify_user(
+                user_id,
+                title="Task completed",
+                body=task_title,
+                data={"task_id": str(task_id), "type": "task.completed"},
+            )
+        elif status == TaskStatus.FAILED:
+            await self._push_service.notify_user(
+                user_id,
+                title="Task failed",
+                body=error_message or task_title,
+                data={"task_id": str(task_id), "type": "task.failed"},
+            )
+
         return task
 
     async def append_assistant_message(self, task_id: UUID, content: str) -> TaskMessage:

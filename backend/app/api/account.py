@@ -1,15 +1,23 @@
+from datetime import timedelta
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from datetime import timedelta
-
-from app.api.deps import get_current_user, get_services
+from app.api.deps import get_current_session, get_current_user, get_services
+from app.models.session import Session
 from app.models.user import User
-from app.schemas.account import AccountSummaryResponse, LimitStatusResponse, UsageSummaryResponse
+from app.schemas.account import (
+    AccountSummaryResponse,
+    LimitStatusResponse,
+    RevokeOtherSessionsResponse,
+    SessionOut,
+    SessionsResponse,
+    UsageSummaryResponse,
+)
 from app.schemas.auth import UserOut
 from app.services.service_registry import ServiceRegistry
-from app.utils.datetime import utcnow
+from app.utils.datetime import coerce_utc, utcnow
 
 router = APIRouter(prefix="/account", tags=["account"])
 
@@ -29,7 +37,7 @@ async def account_me(
         device is not None
         and device.status == "online"
         and device.last_seen_at is not None
-        and utcnow() - device.last_seen_at <= _DEVICE_LIVE_WINDOW
+        and utcnow() - coerce_utc(device.last_seen_at) <= _DEVICE_LIVE_WINDOW
     )
     return AccountSummaryResponse(
         user=UserOut.model_validate(current_user),
@@ -77,3 +85,42 @@ async def account_limits(
         current_concurrent_tasks=limits.current_concurrent_tasks,
         remaining_concurrent_tasks=limits.remaining_concurrent_tasks,
     )
+
+
+@router.get("/sessions", response_model=SessionsResponse)
+async def list_sessions(
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+    current_session: Annotated[Session, Depends(get_current_session)],
+) -> SessionsResponse:
+    sessions = await services.account_service.list_sessions(current_session.user_id)
+    return SessionsResponse(
+        items=[
+            SessionOut(
+                id=db_session.id,
+                created_at=db_session.created_at,
+                expires_at=db_session.expires_at,
+                is_current=db_session.id == current_session.id,
+            )
+            for db_session in sessions
+        ]
+    )
+
+
+@router.post("/sessions/{session_id}/revoke", status_code=204)
+async def revoke_session(
+    session_id: UUID,
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+    current_session: Annotated[Session, Depends(get_current_session)],
+) -> None:
+    await services.account_service.revoke_session(current_session.user_id, session_id)
+
+
+@router.post("/sessions/revoke-others", response_model=RevokeOtherSessionsResponse)
+async def revoke_other_sessions(
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+    current_session: Annotated[Session, Depends(get_current_session)],
+) -> RevokeOtherSessionsResponse:
+    revoked_count = await services.account_service.revoke_other_sessions(
+        current_session.user_id, current_session.id
+    )
+    return RevokeOtherSessionsResponse(revoked_count=revoked_count)

@@ -134,7 +134,7 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
     await _ref.read(homeTasksProvider.notifier).refresh();
   }
 
-  Future<void> reject(String approvalId) async {
+  Future<void> reject(String approvalId, {String? note}) async {
     final current = state.asData?.value;
     if (current == null) {
       return;
@@ -143,7 +143,7 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
     state = AsyncData(current.copyWith(isResolvingApproval: true));
 
     final approvalRepository = _ref.read(approvalRepositoryProvider);
-    await approvalRepository.reject(approvalId: approvalId);
+    await approvalRepository.reject(approvalId: approvalId, note: note);
 
     await refresh();
     await _ref.read(homeTasksProvider.notifier).refresh();

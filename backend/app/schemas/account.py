@@ -37,3 +37,20 @@ class LimitStatusResponse(BaseModel):
     max_concurrent_tasks: int | None
     current_concurrent_tasks: int
     remaining_concurrent_tasks: int | None
+
+
+class SessionOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: UUID
+    created_at: datetime
+    expires_at: datetime
+    is_current: bool
+
+
+class SessionsResponse(BaseModel):
+    items: list[SessionOut]
+
+
+class RevokeOtherSessionsResponse(BaseModel):
+    revoked_count: int

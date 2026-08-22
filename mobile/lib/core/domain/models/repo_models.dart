@@ -18,6 +18,7 @@ class SyncedRepository {
     required this.id,
     required this.userId,
     required this.deviceId,
+    required this.deviceName,
     required this.name,
     required this.localPath,
     required this.gitRoot,
@@ -34,6 +35,7 @@ class SyncedRepository {
   final String id;
   final String userId;
   final String deviceId;
+  final String deviceName;
   final String name;
   final String localPath;
   final String gitRoot;

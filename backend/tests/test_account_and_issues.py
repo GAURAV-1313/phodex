@@ -53,3 +53,31 @@ async def test_account_usage_limits_and_task_issues(client: AsyncClient, login):
     assert issues.status_code == 200
     issue_codes = [item.get("code") for item in issues.json()["items"]]
     assert "APPROVAL_REJECTED" in issue_codes
+
+
+async def test_account_me_reports_device_online_status(client: AsyncClient, login):
+    headers = await login("device-status-user")
+
+    # No device registered yet — must not crash, must report offline.
+    before = await client.get("/account/me", headers=headers)
+    assert before.status_code == 200
+    assert before.json()["device_online"] is False
+    assert before.json()["device_last_seen_at"] is None
+
+    registered = await client.post(
+        "/devices/register",
+        headers=headers,
+        json={"name": "Test Device", "platform": "macos", "agent_version": "0.1.0"},
+    )
+    assert registered.status_code == 201
+
+    # A device that just checked in (last_seen_at set moments ago by the
+    # register call) must be reported online, and comparing its stored
+    # timestamp against "now" must not raise (regression: SQLite doesn't
+    # reliably round-trip tzinfo, so this comparison previously crashed
+    # with "can't subtract offset-naive and offset-aware datetimes").
+    after = await client.get("/account/me", headers=headers)
+    assert after.status_code == 200
+    body = after.json()
+    assert body["device_online"] is True
+    assert body["device_last_seen_at"] is not None

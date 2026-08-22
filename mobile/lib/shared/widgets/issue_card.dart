@@ -14,9 +14,11 @@ class IssueCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.s12),
       padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
-        color: AppColors.accentError.withValues(alpha: 0.1),
+        color: context.colors.accentError.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.accentError.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: context.colors.accentError.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -24,7 +26,7 @@ class IssueCard extends StatelessWidget {
           Text(
             issue.code ?? issue.type,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.accentError,
+              color: context.colors.accentError,
               fontWeight: FontWeight.w600,
             ),
           ),

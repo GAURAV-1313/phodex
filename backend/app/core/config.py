@@ -44,6 +44,22 @@ class Settings(BaseSettings):
     max_active_sessions_per_user: int = Field(default=0, alias="MAX_ACTIVE_SESSIONS_PER_USER")
     max_concurrent_tasks_per_user: int = Field(default=0, alias="MAX_CONCURRENT_TASKS_PER_USER")
 
+    # The address your phone should use to reach this backend — e.g. your
+    # Tailscale IP (http://100.x.x.x:8000) for true off-network access, or an
+    # ngrok/Cloudflare Tunnel URL. Shown (as a QR code) on the /pair page. If
+    # unset, /pair best-effort guesses this machine's local network IP, which
+    # only works for phones on the same Wi-Fi.
+    public_base_url: str | None = Field(default=None, alias="PUBLIC_BASE_URL")
+
+    # Path to a Firebase service-account JSON key file (Firebase console →
+    # Project settings → Service accounts → Generate new private key). Used
+    # to send real push notifications via the FCM HTTP v1 API. Push is a
+    # no-op (never an error) when unset — see app/services/push_service.py.
+    firebase_service_account_json: str | None = Field(
+        default=None, alias="FIREBASE_SERVICE_ACCOUNT_JSON"
+    )
+    firebase_project_id: str | None = Field(default=None, alias="FIREBASE_PROJECT_ID")
+
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
     allow_insecure_test_tokens: bool = Field(default=False, alias="ALLOW_INSECURE_TEST_TOKENS")
 
