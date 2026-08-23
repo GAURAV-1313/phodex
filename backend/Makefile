@@ -1,20 +1,20 @@
 .PHONY: install run test lint format migrate
 
 install:
-	pip install -r requirements-dev.txt
+	python3.11 -m pip install -r requirements-dev.txt
 
 run:
-	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	python3.11 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 test:
-	PYTHONPATH=. pytest -q
+	python3.11 -m pytest -q
 
 lint:
-	ruff check .
-	mypy app
+	python3.11 -m ruff check .
+	python3.11 -m mypy app
 
 format:
-	ruff format .
+	python3.11 -m ruff format .
 
 migrate:
-	alembic upgrade head
+	python3.11 -m alembic upgrade head

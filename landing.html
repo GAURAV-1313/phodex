@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phodex</title>
+<meta name="description" content="Remote development, approval-gated.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #FBF9F7;
+  --text: #1D1A22;
+  --muted: #67616F;
+  --border: #EAE6E9;
+  --accent: #5B4FE8;
+  --font: 'Inter', -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17151C;
+    --text: #F5F3F7;
+    --muted: #A79FB0;
+    --border: #322D3B;
+    --accent: #8B7FFF;
+  }
+}
+
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── Nav ── */
+nav {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo svg { opacity: 0.7; }
+
+nav a {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+nav a:hover { color: var(--text); }
+
+/* ── Main ── */
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 120px 0 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-left { max-width: 440px; }
+
+.hero h1 {
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+
+.hero h1 .accent { color: var(--accent); }
+
+.hero p {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 400px;
+  line-height: 1.65;
+  margin-bottom: 36px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Mascot ── */
+.hero-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mascot-container {
+  width: 240px;
+  height: 240px;
+}
+
+/* ── Section ── */
+section {
+  padding: 60px 0;
+  border-top: 1px solid var(--border);
+}
+
+section h2 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 28px;
+}
+
+/* ── Features ── */
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.feature h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.feature p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* ── Steps ── */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.step-num {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.step h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.step p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* ── Workers ── */
+.workers {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.worker {
+  background: var(--bg);
+  padding: 24px;
+}
+
+.worker h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.worker p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* ── Tech Stack ── */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.tech-item {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.tech-item h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.tech-item p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Architecture ── */
+.arch-diagram {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px;
+  background: var(--bg);
+}
+
+.arch-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.arch-row:last-child { margin-bottom: 0; }
+
+.arch-box {
+  padding: 12px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 140px;
+}
+
+.arch-box.accent {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.arch-box.muted {
+  color: var(--muted);
+}
+
+.arch-arrow {
+  font-size: 18px;
+  color: var(--muted);
+  margin: 12px 0;
+  text-align: center;
+}
+
+/* ── CTA ── */
+.cta {
+  padding: 80px 0;
+  max-width: 480px;
+}
+
+.cta h2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.cta p {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+/* ── Footer ── */
+footer {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+footer a { color: var(--muted); }
+footer a:hover { color: var(--text); }
+
+/* ── Menu Toggle ── */
+#menu-toggle { display: none; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 80px 0 60px;
+    gap: 40px;
+  }
+  .hero-left { max-width: 100%; }
+  .hero-right { order: -1; }
+  .mascot-container { width: 160px; height: 160px; }
+  .features { grid-template-columns: 1fr; gap: 24px; }
+  .steps { grid-template-columns: 1fr 1fr; gap: 24px; }
+  .workers { grid-template-columns: 1fr; }
+  .tech-grid { grid-template-columns: 1fr 1fr; }
+  .nav-links {
+    display: none !important;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    padding: 20px 24px;
+    gap: 16px;
+    z-index: 100;
+  }
+  .nav-links.open { display: flex !important; }
+  #menu-toggle { display: block; }
+}
+
+@media (max-width: 480px) {
+  nav { padding: 16px; }
+  main { padding: 0 16px; }
+  .hero { padding: 40px 0 40px; }
+  .hero h1 { font-size: 26px; }
+  .hero p { font-size: 15px; margin-bottom: 28px; }
+  .mascot-container { width: 130px; height: 130px; }
+  section { padding: 40px 0; }
+  section h2 { margin-bottom: 20px; }
+  .steps { grid-template-columns: 1fr; }
+  .tech-grid { grid-template-columns: 1fr; }
+  .arch-box { min-width: 100px; font-size: 12px; padding: 10px 14px; }
+  .cta { padding: 60px 0; }
+  .cta h2 { font-size: 20px; }
+  footer { flex-direction: column; gap: 8px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    Phodex
+  </div>
+  <div style="display:flex;gap:24px;" class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#workers">Workers</a>
+    <a href="#tech">Tech</a>
+    <a href="#arch">Architecture</a>
+    <a href="https://github.com/GAURAV-1313/phodex" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  <button id="menu-toggle" style="background:none;border:none;cursor:pointer;padding:4px;" aria-label="Menu">
+    <svg width="20" height="20" fill="none" stroke="var(--text)" stroke-width="2" stroke-linecap="round">
+      <path d="M3 6h14M3 10h14M3 14h14"/>
+    </svg>
+  </button>
+</nav>
+
+<main>
+  <div class="hero">
+    <div class="hero-left">
+      <h1>Code from your phone.<br><span class="accent">Approved by you.</span></h1>
+      <p>Send coding tasks to your laptop. Review changes before they're applied. A human-in-the-loop workflow for remote development.</p>
+      <a href="https://github.com/GAURAV-1313/phodex" target="_blank" rel="noopener" class="btn">
+        Get Started
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 6h7M6 3l3.5 3L6 9"/></svg>
+      </a>
+    </div>
+    <div class="hero-right">
+      <div class="mascot-container">
+        <svg id="mascot" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g id="mascot-group">
+            <!-- Wings (behind body) -->
+            <path id="wing-l" d="M95 118C72 110 46 126 42 158C38 190 62 202 78 194C90 190 95 172 95 160Z" fill="#362619"/>
+            <path id="wing-r" d="M145 118C168 110 194 126 198 158C202 190 178 202 162 194C150 190 145 172 145 160Z" fill="#362619"/>
+            <!-- Body: single rounded rect (head + body merged, matching Flutter CustomPainter) -->
+            <rect id="body" x="69" y="52" width="102" height="148" rx="51" fill="#463222"/>
+            <!-- Breast: lower portion of body, well below eyes -->
+            <rect x="87" y="130" width="66" height="48" rx="24" fill="#E2572B"/>
+            <!-- Crest -->
+            <path id="crest" d="M108 52Q112 28 120 20Q128 28 132 52Z" fill="#362619"/>
+            <circle id="crest-dot" cx="120" cy="20" r="7" fill="#5B4FE8"/>
+            <!-- Beak: center of face (bird faces forward, matching Flutter CustomPainter) -->
+            <path id="beak" d="M112 94L120 100L128 94L120 98Z" fill="#F4A93E"/>
+            <!-- Eyes: dark circles with white highlights (matching Flutter CustomPainter) -->
+            <g id="eyes">
+              <circle id="eye-l-white" cx="96" cy="80" r="12" fill="#241A12"/>
+              <circle id="eye-l-pupil" cx="99" cy="77" r="5" fill="#FBF9F7"/>
+              <circle id="eye-r-white" cx="144" cy="80" r="12" fill="#241A12"/>
+              <circle id="eye-r-pupil" cx="147" cy="77" r="5" fill="#FBF9F7"/>
+            </g>
+            <!-- Brows -->
+            <g id="brows">
+              <path id="brow-l" d="M84 66Q96 60 108 66" stroke="#362619" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0"/>
+              <path id="brow-r" d="M132 66Q144 60 156 66" stroke="#362619" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0"/>
+            </g>
+            <!-- Smile -->
+            <path id="smile" d="M100 106Q120 116 140 106" stroke="#241A12" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0"/>
+          </g>
+        </svg>
+        <div id="mood-label" style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted);font-weight:500;">idle</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="features">
+    <h2>Features</h2>
+    <div class="features">
+      <div class="feature">
+        <h3>Approval-gated changes</h3>
+        <p>Every commit requires your explicit approval before touching the working tree.</p>
+      </div>
+      <div class="feature">
+        <h3>Real-time streaming</h3>
+        <p>Watch task progress live via Server-Sent Events -- messages, tool calls, and file changes.</p>
+      </div>
+      <div class="feature">
+        <h3>Push notifications</h3>
+        <p>Instant alerts when tasks complete, need approval, or encounter errors.</p>
+      </div>
+      <div class="feature">
+        <h3>Multi-repo support</h3>
+        <p>Sync and manage multiple repositories. Select the target project and branch per task.</p>
+      </div>
+      <div class="feature">
+        <h3>Encrypted keys</h3>
+        <p>API keys stored with Fernet encryption. Zero-knowledge architecture.</p>
+      </div>
+      <div class="feature">
+        <h3>Pluggable workers</h3>
+        <p>Switch between Claude Code and OpenAI Codex. New providers plug in via a shared interface.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Connect</h3>
+        <p>Scan a QR code to pair your phone with your laptop's agent.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Create a task</h3>
+        <p>Describe what you need. Pick an AI worker and target repository.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Watch</h3>
+        <p>Stream live progress on your phone as the task executes.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <h3>Approve</h3>
+        <p>Review the diff. Approve to apply or reject. Full control.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="workers">
+    <h2>Workers</h2>
+    <div class="workers">
+      <div class="worker">
+        <h3>Claude Code</h3>
+        <p>Anthropic's Claude Code CLI running locally. Best for complex refactoring and architectural changes.</p>
+      </div>
+      <div class="worker">
+        <h3>OpenAI Codex</h3>
+        <p>OpenAI's Codex runtime for fast code generation. Ideal for boilerplate, tests, and straightforward tasks.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tech">
+    <h2>Tech stack</h2>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <h3>FastAPI</h3>
+        <p>Async Python backend with Pydantic v2 and SQLAlchemy 2.x</p>
+      </div>
+      <div class="tech-item">
+        <h3>Flutter</h3>
+        <p>Native mobile app on Android, iOS, and Web with Riverpod</p>
+      </div>
+      <div class="tech-item">
+        <h3>PostgreSQL</h3>
+        <p>Async PG with Alembic migrations and UUID primary keys</p>
+      </div>
+      <div class="tech-item">
+        <h3>Redis</h3>
+        <p>Event fan-out, rate limiting, and ephemeral state coordination</p>
+      </div>
+      <div class="tech-item">
+        <h3>FCM</h3>
+        <p>Firebase Cloud Messaging for push notifications on task events</p>
+      </div>
+      <div class="tech-item">
+        <h3>SSE</h3>
+        <p>Server-Sent Events for real-time task progress streaming</p>
+      </div>
+      <div class="tech-item">
+        <h3>Fernet</h3>
+        <p>Encrypted storage of AI provider API keys at rest</p>
+      </div>
+      <div class="tech-item">
+        <h3>Prometheus</h3>
+        <p>Application metrics, Grafana dashboards, and Jaeger tracing</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="arch">
+    <h2>Architecture</h2>
+    <div class="arch-diagram">
+      <div class="arch-row">
+        <div class="arch-box accent">Mobile App</div>
+        <span class="arch-arrow">&#8594;</span>
+        <div class="arch-box accent">FastAPI</div>
+        <span class="arch-arrow">&#8594;</span>
+        <div class="arch-box accent">Worker</div>
+        <span class="arch-arrow">&#8594;</span>
+        <div class="arch-box muted">Git Repo</div>
+      </div>
+      <div class="arch-arrow">&#8593;</div>
+      <div style="text-align:center;font-size:12px;color:var(--muted);margin:8px 0;">Push Notifications</div>
+      <div class="arch-arrow">&#8593;</div>
+      <div style="text-align:center;font-size:12px;color:var(--muted);margin:8px 0;">Real-time Events (SSE)</div>
+      <div class="arch-arrow">&#8593;</div>
+      <div style="text-align:center;font-size:12px;color:var(--muted);margin:8px 0;">Human Approval</div>
+    </div>
+  </section>
+
+  <div class="cta" id="get-started">
+    <h2>Start developing remotely</h2>
+    <p>Set up your laptop agent in minutes. Pair with your phone via QR code.</p>
+    <a href="https://github.com/GAURAV-1313/phodex" target="_blank" rel="noopener" class="btn">
+      Get Started
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 6h7M6 3l3.5 3L6 9"/></svg>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <span>&copy; 2025 Phodex</span>
+  <div style="display:flex;gap:24px;">
+    <a href="#">GitHub</a>
+    <a href="#">Documentation</a>
+  </div>
+</footer>
+
+<script>
+(function() {
+  const crest = document.getElementById('crest');
+  const crestDot = document.getElementById('crest-dot');
+  const beak = document.getElementById('beak');
+  const eyeLWhite = document.getElementById('eye-l-white');
+  const eyeLPupil = document.getElementById('eye-l-pupil');
+  const eyeRWhite = document.getElementById('eye-r-white');
+  const eyeRPupil = document.getElementById('eye-r-pupil');
+  const browL = document.getElementById('brow-l');
+  const browR = document.getElementById('brow-r');
+  const smile = document.getElementById('smile');
+  const wingL = document.getElementById('wing-l');
+  const wingR = document.getElementById('wing-r');
+  const moodLabel = document.getElementById('mood-label');
+
+  const moods = ['idle', 'thinking', 'curious', 'success', 'error', 'resting'];
+  let moodIndex = 0;
+
+  function clearExtraEyes() {
+    const old = document.getElementById('happy-eye-l');
+    const old2 = document.getElementById('happy-eye-r');
+    const old3 = document.getElementById('closed-eye-l');
+    const old4 = document.getElementById('closed-eye-r');
+    if (old) old.remove();
+    if (old2) old2.remove();
+    if (old3) old3.remove();
+    if (old4) old4.remove();
+  }
+
+  function setMood(mood) {
+    moodLabel.textContent = mood;
+    clearExtraEyes();
+    // Reset
+    crest.setAttribute('fill', '#362619');
+    crestDot.setAttribute('fill', '#5B4FE8');
+    beak.setAttribute('d', 'M112 94L120 100L128 94L120 98Z');
+    browL.setAttribute('opacity', '0');
+    browR.setAttribute('opacity', '0');
+    smile.setAttribute('opacity', '0');
+    wingL.setAttribute('fill', '#362619');
+    wingR.setAttribute('fill', '#362619');
+    // Reset eyes to normal circles
+    eyeLWhite.setAttribute('fill', '#241A12');
+    eyeLPupil.setAttribute('fill', '#FBF9F7');
+    eyeRWhite.setAttribute('fill', '#241A12');
+    eyeRPupil.setAttribute('fill', '#FBF9F7');
+    eyeLWhite.setAttribute('r', '12');
+    eyeRWhite.setAttribute('r', '12');
+
+    switch (mood) {
+      case 'idle':
+        eyeLPupil.setAttribute('r', '5');
+        eyeLPupil.setAttribute('cx', '99');
+        eyeLPupil.setAttribute('cy', '77');
+        eyeRPupil.setAttribute('r', '5');
+        eyeRPupil.setAttribute('cx', '147');
+        eyeRPupil.setAttribute('cy', '77');
+        break;
+      case 'thinking':
+        eyeLPupil.setAttribute('r', '5');
+        eyeLPupil.setAttribute('cx', '101');
+        eyeLPupil.setAttribute('cy', '75');
+        eyeRPupil.setAttribute('r', '5');
+        eyeRPupil.setAttribute('cx', '149');
+        eyeRPupil.setAttribute('cy', '75');
+        crestDot.setAttribute('fill', '#8B7FFF');
+        break;
+      case 'curious':
+        eyeLPupil.setAttribute('r', '5');
+        eyeLPupil.setAttribute('cx', '99');
+        eyeLPupil.setAttribute('cy', '77');
+        eyeRPupil.setAttribute('r', '5');
+        eyeRPupil.setAttribute('cx', '149');
+        eyeRPupil.setAttribute('cy', '78');
+        eyeLWhite.setAttribute('r', '13');
+        eyeRWhite.setAttribute('r', '13');
+        browR.setAttribute('opacity', '1');
+        browR.setAttribute('d', 'M132 64Q144 58 156 64');
+        break;
+      case 'success':
+        eyeLWhite.setAttribute('r', '0');
+        eyeLPupil.setAttribute('r', '0');
+        eyeRWhite.setAttribute('r', '0');
+        eyeRPupil.setAttribute('r', '0');
+        const hL = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        hL.setAttribute('d', 'M88 78Q96 70 104 78');
+        hL.setAttribute('stroke', '#FBF9F7');
+        hL.setAttribute('stroke-width', '3');
+        hL.setAttribute('stroke-linecap', 'round');
+        hL.setAttribute('fill', 'none');
+        hL.id = 'happy-eye-l';
+        const hR = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        hR.setAttribute('d', 'M136 78Q144 70 152 78');
+        hR.setAttribute('stroke', '#FBF9F7');
+        hR.setAttribute('stroke-width', '3');
+        hR.setAttribute('stroke-linecap', 'round');
+        hR.setAttribute('fill', 'none');
+        hR.id = 'happy-eye-r';
+        document.getElementById('eyes').appendChild(hL);
+        document.getElementById('eyes').appendChild(hR);
+        beak.setAttribute('d', 'M104 94L120 108L136 94L120 102Z');
+        smile.setAttribute('opacity', '1');
+        wingL.setAttribute('fill', '#5B4FE8');
+        wingR.setAttribute('fill', '#5B4FE8');
+        break;
+      case 'error':
+        eyeLPupil.setAttribute('r', '5');
+        eyeLPupil.setAttribute('cx', '96');
+        eyeLPupil.setAttribute('cy', '82');
+        eyeRPupil.setAttribute('r', '5');
+        eyeRPupil.setAttribute('cx', '144');
+        eyeRPupil.setAttribute('cy', '82');
+        eyeLWhite.setAttribute('r', '10');
+        eyeRWhite.setAttribute('r', '10');
+        browL.setAttribute('opacity', '1');
+        browL.setAttribute('d', 'M84 64Q96 70 108 64');
+        browR.setAttribute('opacity', '1');
+        browR.setAttribute('d', 'M132 70Q144 64 156 64');
+        beak.setAttribute('d', 'M112 98L120 104L128 98L120 102Z');
+        wingL.setAttribute('fill', '#5B4FE8');
+        wingR.setAttribute('fill', '#5B4FE8');
+        break;
+      case 'resting':
+        eyeLWhite.setAttribute('r', '0');
+        eyeLPupil.setAttribute('r', '0');
+        eyeRWhite.setAttribute('r', '0');
+        eyeRPupil.setAttribute('r', '0');
+        const cL = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        cL.setAttribute('d', 'M86 80Q96 86 106 80');
+        cL.setAttribute('stroke', '#FBF9F7');
+        cL.setAttribute('stroke-width', '3');
+        cL.setAttribute('stroke-linecap', 'round');
+        cL.setAttribute('fill', 'none');
+        cL.id = 'closed-eye-l';
+        const cR = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        cR.setAttribute('d', 'M134 80Q144 86 154 80');
+        cR.setAttribute('stroke', '#FBF9F7');
+        cR.setAttribute('stroke-width', '3');
+        cR.setAttribute('stroke-linecap', 'round');
+        cR.setAttribute('fill', 'none');
+        cR.id = 'closed-eye-r';
+        document.getElementById('eyes').appendChild(cL);
+        document.getElementById('eyes').appendChild(cR);
+        break;
+    }
+  }
+
+  setMood(moods[0]);
+  setInterval(() => {
+    moodIndex = (moodIndex + 1) % moods.length;
+    setMood(moods[moodIndex]);
+  }, 2500);
+
+  // Mobile menu toggle
+  const toggle = document.getElementById('menu-toggle');
+  const links = document.querySelector('.nav-links');
+  if (toggle && links) {
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
+  }
+})();
+</script>
+</body>
+</html>

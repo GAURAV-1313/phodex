@@ -98,6 +98,11 @@ class GitService:
             await self._run_git_streamed(
                 task_id, operation.repo_path, ["push", "-u", "origin", "HEAD"]
             )
+            pushed_branch = (
+                await self._run_git_capture(
+                    operation.repo_path, ["rev-parse", "--abbrev-ref", "HEAD"]
+                )
+            ).strip()
         except GitCommandError as exc:
             await self._set_status(operation.id, GitOperationStatus.FAILED, error_message=str(exc))
             await self._event_service.append_event(
@@ -112,7 +117,9 @@ class GitService:
             )
             return await self._reload(operation.id)
 
-        await self._set_status(operation.id, GitOperationStatus.COMPLETED)
+        await self._set_status(
+            operation.id, GitOperationStatus.COMPLETED, pushed_branch=pushed_branch
+        )
         await self._event_service.append_event(
             task_id,
             "git.completed",
@@ -160,6 +167,7 @@ class GitService:
         status: GitOperationStatus,
         error_message: str | None = None,
         commit_message: str | None = None,
+        pushed_branch: str | None = None,
     ) -> None:
         async with self._session_factory() as session:
             operation = await session.get(GitOperation, git_operation_id)
@@ -170,6 +178,8 @@ class GitService:
                 operation.error_message = error_message
             if commit_message is not None:
                 operation.commit_message = commit_message
+            if pushed_branch is not None:
+                operation.pushed_branch = pushed_branch
             await session.commit()
 
     async def _run_git_capture(self, cwd: str, args: list[str]) -> str:

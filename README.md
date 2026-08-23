@@ -4,6 +4,8 @@ A full-stack platform that connects a Flutter mobile app to AI coding workers (C
 
 **Tech Stack:** FastAPI · Python 3.11 · PostgreSQL + AsyncPG · Redis · Firebase Cloud Messaging · Flutter/Dart · Riverpod · Alembic
 
+[Landing Page](https://phodex-amber.vercel.app) · [GitHub](https://github.com/GAURAV-1313/phodex)
+
 ---
 
 ## What It Does
