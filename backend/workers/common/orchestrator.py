@@ -16,9 +16,9 @@ from app.models.enums import TaskStatus
 from app.services.approval_service import ApprovalService
 from app.services.event_service import EventService
 from app.services.task_service import TaskService
-from app.workers.base import WorkerEngine
-from app.workers.common.context import ExecutionContextBuilder
-from app.workers.common.state import ExecutionContext, RuntimeState
+from workers.base import WorkerEngine
+from workers.common.context import ExecutionContextBuilder
+from workers.common.state import ExecutionContext, RuntimeState
 
 logger = structlog.get_logger(__name__)
 

@@ -1,4 +1,4 @@
-from app.workers.claude.output_parser import (
+from workers.claude.output_parser import (
     extract_assistant_text,
     extract_result_subtype,
     extract_result_summary,

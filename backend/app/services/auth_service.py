@@ -10,6 +10,8 @@ from app.models.session import Session
 from app.models.user import User
 from app.services.exceptions import ConflictError, LimitExceededError, UnauthorizedError
 from app.services.google_auth_service import GoogleProfile
+from app.repositories.session_repo import SessionRepository
+from app.repositories.user_repo import UserRepository
 from app.utils.datetime import coerce_utc, utcnow
 
 
@@ -19,10 +21,14 @@ class AuthService:
         session_factory: async_sessionmaker[AsyncSession],
         jwt_manager: JWTManager,
         settings: Settings,
+        user_repo: UserRepository,
+        session_repo: SessionRepository,
     ) -> None:
         self._session_factory = session_factory
         self._jwt_manager = jwt_manager
         self._settings = settings
+        self._user_repo = user_repo
+        self._session_repo = session_repo
 
     async def login_with_google_profile(self, profile: GoogleProfile) -> tuple[str, datetime, User]:
         async with self._session_factory() as session:

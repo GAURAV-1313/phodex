@@ -16,6 +16,7 @@ from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, LimitExceededError, NotFoundError
 from app.services.push_service import PushService
 from app.services.redis_service import RedisService
+from app.repositories.task_repo import TaskRepository
 from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:
@@ -30,12 +31,14 @@ class TaskService:
         settings: Settings,
         redis: RedisService,
         push_service: PushService,
+        task_repo: TaskRepository,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
         self._settings = settings
         self._redis = redis
         self._push_service = push_service
+        self._task_repo = task_repo
         self._worker_dispatcher: WorkerDispatcher | None = None
 
     def set_worker_dispatcher(self, dispatcher: "WorkerDispatcher") -> None:
@@ -51,18 +54,9 @@ class TaskService:
         async with self._session_factory() as session:
             max_concurrent = self._settings.max_concurrent_tasks_per_user
             if max_concurrent > 0:
-                running_count = await session.scalar(
-                    select(func.count(Task.id)).where(
-                        Task.user_id == user_id,
-                        Task.status.in_(
-                            [
-                                TaskStatus.QUEUED,
-                                TaskStatus.STARTING,
-                                TaskStatus.RUNNING,
-                                TaskStatus.WAITING_APPROVAL,
-                            ]
-                        ),
-                    )
+                running_count = await self._task_repo.count_concurrent(
+                    session, user_id,
+                    [TaskStatus.QUEUED.value, TaskStatus.STARTING.value, TaskStatus.RUNNING.value, TaskStatus.WAITING_APPROVAL.value],
                 )
                 if int(running_count or 0) >= max_concurrent:
                     raise LimitExceededError(
@@ -114,22 +108,11 @@ class TaskService:
 
     async def list_tasks(self, user_id: UUID) -> list[Task]:
         async with self._session_factory() as session:
-            tasks = (
-                (
-                    await session.execute(
-                        select(Task).where(Task.user_id == user_id).order_by(Task.created_at.desc())
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            return list(tasks)
+            return await self._task_repo.list_by_user(session, user_id)
 
     async def get_task(self, user_id: UUID, task_id: UUID) -> Task:
         async with self._session_factory() as session:
-            task = await session.scalar(
-                select(Task).where(Task.id == task_id, Task.user_id == user_id)
-            )
+            task = await self._task_repo.get_by_id_and_user(session, task_id, user_id)
             if task is None:
                 raise NotFoundError("Task not found")
             return task
@@ -138,23 +121,11 @@ class TaskService:
         self, user_id: UUID, task_id: UUID
     ) -> tuple[Task, list[TaskMessage], list[TaskEventEnvelope], list[ApprovalRequest]]:
         async with self._session_factory() as session:
-            task = await session.scalar(
-                select(Task).where(Task.id == task_id, Task.user_id == user_id)
-            )
+            task = await self._task_repo.get_by_id_and_user(session, task_id, user_id)
             if task is None:
                 raise NotFoundError("Task not found")
 
-            messages = (
-                (
-                    await session.execute(
-                        select(TaskMessage)
-                        .where(TaskMessage.task_id == task_id)
-                        .order_by(TaskMessage.created_at.asc())
-                    )
-                )
-                .scalars()
-                .all()
-            )
+            messages = await self._task_repo.list_messages(session, task_id)
 
             approvals = (
                 (
@@ -173,9 +144,7 @@ class TaskService:
 
     async def add_reply(self, user_id: UUID, task_id: UUID, content: str) -> TaskMessage:
         async with self._session_factory() as session:
-            task = await session.scalar(
-                select(Task).where(Task.id == task_id, Task.user_id == user_id)
-            )
+            task = await self._task_repo.get_by_id_and_user(session, task_id, user_id)
             if task is None:
                 raise NotFoundError("Task not found")
             if task.status in {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED}:
@@ -204,9 +173,7 @@ class TaskService:
 
     async def cancel_task(self, user_id: UUID, task_id: UUID) -> Task:
         async with self._session_factory() as session:
-            task = await session.scalar(
-                select(Task).where(Task.id == task_id, Task.user_id == user_id).with_for_update()
-            )
+            task = await self._task_repo.get_by_id_and_user(session, task_id, user_id)
             if task is None:
                 raise NotFoundError("Task not found")
             if task.status == TaskStatus.CANCELLED:
@@ -215,12 +182,10 @@ class TaskService:
                 raise ConflictError("Cannot cancel a finished task")
 
             now = utcnow()
-            task.status = TaskStatus.CANCELLED
-            task.current_phase = "cancelled"
-            task.cancelled_at = now
-            task.finished_at = now
-            await session.commit()
-            await session.refresh(task)
+            task = await self._task_repo.update_status(
+                session, task_id, TaskStatus.CANCELLED,
+                current_phase="cancelled", cancelled_at=now, finished_at=now,
+            )
 
         await self._event_service.append_event(
             task_id, "task.cancelled", {"message": "Task cancelled by user"}
@@ -234,18 +199,7 @@ class TaskService:
     async def list_messages(self, user_id: UUID, task_id: UUID) -> list[TaskMessage]:
         await self.get_task(user_id, task_id)
         async with self._session_factory() as session:
-            messages = (
-                (
-                    await session.execute(
-                        select(TaskMessage)
-                        .where(TaskMessage.task_id == task_id)
-                        .order_by(TaskMessage.created_at.asc())
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            return list(messages)
+            return await self._task_repo.list_messages(session, task_id)
 
     async def list_events(self, user_id: UUID, task_id: UUID) -> list[TaskEventEnvelope]:
         await self.get_task(user_id, task_id)
@@ -286,25 +240,20 @@ class TaskService:
         final_summary: str | None = None,
     ) -> Task:
         async with self._session_factory() as session:
-            task = await session.scalar(select(Task).where(Task.id == task_id).with_for_update())
+            task = await self._task_repo.get_by_id(session, task_id)
             if task is None:
                 raise NotFoundError("Task not found")
 
             now = utcnow()
-            task.status = status
-            task.current_phase = current_phase
-            task.error_message = error_message
-            task.final_summary = final_summary
-
-            if status in {TaskStatus.STARTING, TaskStatus.RUNNING} and task.started_at is None:
-                task.started_at = now
-            if status in {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED}:
-                task.finished_at = now
-            if status == TaskStatus.CANCELLED and task.cancelled_at is None:
-                task.cancelled_at = now
-
-            await session.commit()
-            await session.refresh(task)
+            task = await self._task_repo.update_status(
+                session, task_id, status,
+                current_phase=current_phase,
+                error_message=error_message,
+                final_summary=final_summary,
+                started_at=now if status in {TaskStatus.STARTING, TaskStatus.RUNNING} and task.started_at is None else task.started_at,
+                finished_at=now if status in {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED} else task.finished_at,
+                cancelled_at=now if status == TaskStatus.CANCELLED and task.cancelled_at is None else task.cancelled_at,
+            )
             user_id = task.user_id
             started_at = task.started_at
             finished_at = task.finished_at
@@ -348,14 +297,14 @@ class TaskService:
 
     async def get_status(self, task_id: UUID) -> TaskStatus:
         async with self._session_factory() as session:
-            task = await session.get(Task, task_id)
+            task = await self._task_repo.get_by_id(session, task_id)
             if task is None:
                 raise NotFoundError("Task not found")
             return task.status
 
     async def get_user_id(self, task_id: UUID) -> UUID:
         async with self._session_factory() as session:
-            task = await session.get(Task, task_id)
+            task = await self._task_repo.get_by_id(session, task_id)
             if task is None:
                 raise NotFoundError("Task not found")
             return task.user_id

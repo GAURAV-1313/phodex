@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from time import perf_counter
@@ -14,114 +15,23 @@ from app.api.error_handlers import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
-from app.core.metrics import HTTP_DURATION, HTTP_REQUESTS, metrics_response
-from app.core.security import JWTManager
+from app.core.metrics import (
+    AUTH_DURATION,
+    DB_POOL_IDLE,
+    DB_POOL_SIZE,
+    HTTP_DURATION,
+    HTTP_REQUESTS,
+    RATE_LIMIT_REJECTIONS,
+    SSE_CONNECTION_DURATION,
+    TASK_CREATE_DURATION,
+    TASK_DETAIL_DURATION,
+    metrics_response,
+)
 from app.core.telemetry import configure_runtime_telemetry, instrument_fastapi
 from app.db.session import create_engine_and_sessionmaker, create_schema
-from app.services.account_service import AccountService
-from app.services.approval_service import ApprovalService
-from app.services.auth_service import AuthService
-from app.services.device_service import DeviceService
-from app.services.event_service import EventBus, EventService
-from app.services.git_service import GitService
-from app.services.google_auth_service import GoogleAuthService
 from app.services.pairing_service import resolve_public_base_url
-from app.services.push_service import PushService
 from app.services.redis_service import RedisService
-from app.services.repo_sync_service import RepoSyncService
-from app.services.service_registry import ServiceRegistry
-from app.services.task_service import TaskService
-from app.services.user_ai_settings_service import UserAiSettingsService
-from app.services.worker_dispatcher import WorkerDispatcher
-from app.workers.base import WorkerEngine
-from app.workers.claude import ClaudeWorkerEngine
-from app.workers.codex import CodexWorkerEngine
-from app.workers.fake_worker import FakeWorkerEngine
-
-
-def _build_service_registry(
-    settings: Settings,
-    session_factory: async_sessionmaker[AsyncSession],
-    redis: RedisService,
-) -> ServiceRegistry:
-    jwt_manager = JWTManager(settings)
-    event_bus = EventBus(redis)
-
-    event_service = EventService(session_factory=session_factory, event_bus=event_bus)
-    push_service = PushService(session_factory=session_factory, settings=settings)
-    task_service = TaskService(
-        session_factory=session_factory,
-        event_service=event_service,
-        settings=settings,
-        redis=redis,
-        push_service=push_service,
-    )
-    approval_service = ApprovalService(
-        session_factory=session_factory,
-        event_service=event_service,
-        redis=redis,
-        push_service=push_service,
-    )
-    user_ai_settings_service = UserAiSettingsService(
-        session_factory=session_factory,
-        settings=settings,
-    )
-
-    worker_engine: WorkerEngine
-    if settings.worker_engine == "codex":
-        worker_engine = CodexWorkerEngine(
-            settings=settings,
-            session_factory=session_factory,
-            task_service=task_service,
-            event_service=event_service,
-            approval_service=approval_service,
-            user_ai_settings_service=user_ai_settings_service,
-        )
-    elif settings.worker_engine == "claude":
-        worker_engine = ClaudeWorkerEngine(
-            settings=settings,
-            session_factory=session_factory,
-            task_service=task_service,
-            event_service=event_service,
-            approval_service=approval_service,
-            user_ai_settings_service=user_ai_settings_service,
-        )
-    else:
-        worker_engine = FakeWorkerEngine(
-            settings=settings,
-            task_service=task_service,
-            event_service=event_service,
-            approval_service=approval_service,
-        )
-    worker_dispatcher = WorkerDispatcher(worker_engine=worker_engine)
-
-    task_service.set_worker_dispatcher(worker_dispatcher)
-    approval_service.set_worker_dispatcher(worker_dispatcher)
-
-    return ServiceRegistry(
-        settings=settings,
-        auth_service=AuthService(
-            session_factory=session_factory,
-            jwt_manager=jwt_manager,
-            settings=settings,
-        ),
-        google_auth_service=GoogleAuthService(settings=settings),
-        account_service=AccountService(
-            session_factory=session_factory,
-            settings=settings,
-            redis=redis,
-        ),
-        task_service=task_service,
-        event_service=event_service,
-        approval_service=approval_service,
-        device_service=DeviceService(session_factory=session_factory),
-        repo_sync_service=RepoSyncService(session_factory=session_factory),
-        worker_dispatcher=worker_dispatcher,
-        git_service=GitService(session_factory=session_factory, event_service=event_service),
-        user_ai_settings_service=user_ai_settings_service,
-        push_service=push_service,
-        redis=redis,
-    )
+from app.services.service_registry import build_registry
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -134,14 +44,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redis = RedisService(app_settings.redis_url, app_settings.redis_channel)
         await redis.connect()
 
+        async def _pool_metrics() -> None:
+            import asyncio
+            while True:
+                try:
+                    pool = engine.pool
+                    DB_POOL_SIZE.set(pool.status()["size"])
+                    DB_POOL_IDLE.set(pool.status()["idle"])
+                except Exception:
+                    pass
+                await asyncio.sleep(5)
+
         if app_settings.auto_create_schema:
             await create_schema(engine)
 
         app.state.engine = engine
         app.state.session_factory = session_factory
-        app.state.services = _build_service_registry(app_settings, session_factory, redis)
+        app.state.services = build_registry(session_factory, redis, app_settings)
         await app.state.services.event_service.start()
         configure_runtime_telemetry(app_settings, engine.sync_engine)
+        _pool_task = asyncio.create_task(_pool_metrics())
 
         _, is_guessed = resolve_public_base_url(app_settings)
         note = " (same Wi-Fi only — set PUBLIC_BASE_URL for anywhere access)" if is_guessed else ""
@@ -153,6 +75,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         yield
 
+        _pool_task.cancel()
+        try:
+            await _pool_task
+        except asyncio.CancelledError:
+            pass
         await app.state.services.event_service.close()
         await redis.close()
         await engine.dispose()
@@ -166,15 +93,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request_id = request.headers.get("X-Request-ID", str(uuid4()))
         structlog.contextvars.bind_contextvars(request_id=request_id)
         started = perf_counter()
-        try:
-            response = await call_next(request)
-        finally:
-            structlog.contextvars.clear_contextvars()
-        duration = perf_counter() - started
         route = request.scope.get("route")
         path = getattr(route, "path", request.url.path)
+        response = await call_next(request)
+        duration = perf_counter() - started
         HTTP_REQUESTS.labels(request.method, path, response.status_code).inc()
         HTTP_DURATION.labels(request.method, path).observe(duration)
+        if path.startswith("/auth"):
+            AUTH_DURATION.labels(endpoint=path).observe(duration)
+        elif path == "/tasks" and request.method == "POST":
+            TASK_CREATE_DURATION.observe(duration)
+        elif "/tasks/" in path and "/stream" not in path and "/messages" not in path and "/events" not in path:
+            TASK_DETAIL_DURATION.observe(duration)
+        structlog.contextvars.clear_contextvars()
         response.headers["X-Request-ID"] = request_id
         return response
 

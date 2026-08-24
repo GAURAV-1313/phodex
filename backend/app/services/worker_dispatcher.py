@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.workers.base import WorkerEngine
+from workers.base import WorkerEngine
 
 
 class WorkerDispatcher:

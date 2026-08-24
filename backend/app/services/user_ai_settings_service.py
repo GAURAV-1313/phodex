@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import Settings
 from app.core.crypto import decrypt_secret, encrypt_secret
 from app.models.user_ai_settings import UserAiSettings
+from app.repositories.user_ai_settings_repo import UserAiSettingsRepository
 
 
 class UserAiSettingsService:
@@ -21,17 +22,15 @@ class UserAiSettingsService:
         self,
         session_factory: async_sessionmaker[AsyncSession],
         settings: Settings,
+        user_ai_settings_repo: UserAiSettingsRepository,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
+        self._user_ai_settings_repo = user_ai_settings_repo
 
     async def get_decrypted(self, user_id: UUID) -> UserAiSettings | None:
-        """Internal use only (subprocess env building) — never expose decrypted keys over the API."""
         async with self._session_factory() as session:
-            row: UserAiSettings | None = await session.scalar(
-                select(UserAiSettings).where(UserAiSettings.user_id == user_id)
-            )
-            return row
+            return await self._user_ai_settings_repo.get_by_user_id(session, user_id)
 
     def decrypt_anthropic_key(self, settings_row: UserAiSettings) -> str | None:
         if not settings_row.anthropic_api_key_encrypted:
@@ -71,12 +70,10 @@ class UserAiSettingsService:
         preferred_codex_model: str | None,
     ) -> dict:
         async with self._session_factory() as session:
-            row = await session.scalar(
-                select(UserAiSettings).where(UserAiSettings.user_id == user_id)
-            )
+            row = await self._user_ai_settings_repo.get_by_user_id(session, user_id)
             if row is None:
                 row = UserAiSettings(user_id=user_id)
-                session.add(row)
+                row = await self._user_ai_settings_repo.create(session, row)
 
             if clear_anthropic_key:
                 row.anthropic_api_key_encrypted = None
@@ -93,6 +90,6 @@ class UserAiSettingsService:
             if preferred_codex_model is not None:
                 row.preferred_codex_model = preferred_codex_model or None
 
-            await session.commit()
+            await self._user_ai_settings_repo.update(session, row)
 
         return await self.get_status(user_id)

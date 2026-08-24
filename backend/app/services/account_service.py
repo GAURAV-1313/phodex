@@ -12,6 +12,8 @@ from app.models.task import Task
 from app.models.task_event import TaskEvent
 from app.services.exceptions import NotFoundError
 from app.services.redis_service import RedisService
+from app.repositories.session_repo import SessionRepository
+from app.repositories.task_repo import TaskRepository
 from app.utils.datetime import utcnow
 
 
@@ -45,10 +47,14 @@ class AccountService:
         session_factory: async_sessionmaker[AsyncSession],
         settings: Settings,
         redis: RedisService,
+        session_repo: SessionRepository,
+        task_repo: TaskRepository,
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
         self._redis = redis
+        self._session_repo = session_repo
+        self._task_repo = task_repo
 
     async def active_sessions_count(self, user_id: UUID) -> int:
         async with self._session_factory() as session:
@@ -118,16 +124,7 @@ class AccountService:
 
     async def list_sessions(self, user_id: UUID) -> list[Session]:
         async with self._session_factory() as session:
-            result = await session.scalars(
-                select(Session)
-                .where(
-                    Session.user_id == user_id,
-                    Session.revoked_at.is_(None),
-                    Session.expires_at > utcnow(),
-                )
-                .order_by(Session.created_at.desc())
-            )
-            return list(result.all())
+            return await self._session_repo.list_active(session, user_id)
 
     async def revoke_session(self, user_id: UUID, session_id: UUID) -> None:
         async with self._session_factory() as session:
@@ -140,19 +137,7 @@ class AccountService:
 
     async def revoke_other_sessions(self, user_id: UUID, keep_session_id: UUID) -> int:
         async with self._session_factory() as session:
-            result = await session.scalars(
-                select(Session).where(
-                    Session.user_id == user_id,
-                    Session.id != keep_session_id,
-                    Session.revoked_at.is_(None),
-                )
-            )
-            sessions = list(result.all())
-            now = utcnow()
-            for db_session in sessions:
-                db_session.revoked_at = now
-            await session.commit()
-            return len(sessions)
+            return await self._session_repo.revoke_others(session, user_id, keep_session_id)
 
     async def limits(self, user_id: UUID) -> LimitStatus:
         usage = await self.usage_summary(user_id)

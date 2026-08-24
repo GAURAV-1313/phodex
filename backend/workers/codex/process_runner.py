@@ -1,4 +1,4 @@
-"""Owns the Claude Code runtime subprocess: spawning, output streaming, and outcome reporting."""
+"""Owns the Codex runtime subprocess: spawning, stdin/stdout wiring, and outcome reporting."""
 
 import asyncio
 import json
@@ -14,17 +14,13 @@ from app.models.enums import TaskStatus
 from app.services.event_service import EventService
 from app.services.task_service import TaskService
 from app.services.user_ai_settings_service import UserAiSettingsService
-from app.workers.claude.output_parser import (
-    extract_assistant_text,
-    extract_result_subtype,
-    extract_result_summary,
-    extract_tool_use_summaries,
-    is_error_result,
-    is_result_event,
-    is_system_init,
+from workers.codex.output_parser import (
+    extract_assistant_message,
+    extract_final_summary,
+    is_blocked_outcome,
 )
-from app.workers.common.state import ExecutionContext, RuntimeState
-from app.workers.common.subprocess_io import ManagedSubprocess
+from workers.common.state import ExecutionContext, RuntimeState
+from workers.common.subprocess_io import ManagedSubprocess
 
 logger = structlog.get_logger(__name__)
 
@@ -44,47 +40,46 @@ class ProcessRunner:
         self._lock = lock
         self._user_ai_settings_service = user_ai_settings_service
 
-    def _base_args(self, prompt: str, model: str | None) -> list[str]:
-        args = [
-            self._settings.claude_command,
-            "-p",
-            prompt,
-            "--output-format",
-            "stream-json",
-            "--verbose",
-            "--permission-mode",
-            self._settings.claude_permission_mode,
-        ]
-        if model:
-            args += ["--model", model]
-        args += shlex.split(self._settings.claude_extra_args)
-        return args
-
     def command_preview(self) -> str:
-        return " ".join(self._base_args("<prompt>", None)).strip()
+        parts = [self._settings.codex_command, *shlex.split(self._settings.codex_args)]
+        return " ".join(parts).strip()
 
     async def _resolve_overrides(self, task_id: UUID) -> tuple[dict[str, str] | None, str | None]:
         """Looks up this task's owner's optional API-key/model override.
 
         Returns (env, model) — env is None when no override is set, meaning
         the subprocess inherits this process's environment unchanged (today's
-        behavior: relies on `claude login` already being done on this host).
+        behavior: relies on `codex login` already being done on this host).
         """
         user_id = await self._task_service.get_user_id(task_id)
         row = await self._user_ai_settings_service.get_decrypted(user_id)
         if row is None:
             return None, None
         env = None
-        api_key = self._user_ai_settings_service.decrypt_anthropic_key(row)
+        api_key = self._user_ai_settings_service.decrypt_openai_key(row)
         if api_key:
-            env = {**os.environ, "ANTHROPIC_API_KEY": api_key}
-        return env, row.preferred_claude_model
+            env = {**os.environ, "OPENAI_API_KEY": api_key}
+        return env, row.preferred_codex_model
 
     async def run(self, task_id: UUID, state: RuntimeState, context: ExecutionContext) -> None:
         env, model = await self._resolve_overrides(task_id)
-        command = self._base_args(context.prompt_text, model)
+        arg_tokens = shlex.split(self._settings.codex_args)
+        if model:
+            # `--model` is scoped to the `exec` subcommand (`codex exec --help`),
+            # not a top-level `codex` flag, and CODEX_ARGS often ends in a bare
+            # `-` (stdin prompt marker) — so insert right after the subcommand
+            # token rather than appending at the end, where it could land after
+            # that positional and be misparsed.
+            insert_at = 1 if arg_tokens[:1] == ["exec"] else len(arg_tokens)
+            arg_tokens = [
+                *arg_tokens[:insert_at],
+                "--model",
+                model,
+                *arg_tokens[insert_at:],
+            ]
+        command = [self._settings.codex_command, *arg_tokens]
         if not command or not command[0]:
-            raise RuntimeError("CLAUDE_COMMAND is empty")
+            raise RuntimeError("CODEX_COMMAND is empty")
 
         cwd: str | None = context.workdir
         if cwd is not None:
@@ -104,14 +99,15 @@ class ProcessRunner:
             task_id,
             "task.log",
             {
-                "message": "Launching Claude runtime process",
+                "message": "Launching Codex runtime process",
                 "command": self.command_preview(),
                 "workdir": cwd,
             },
         )
 
+        use_stdin = self._settings.codex_prompt_stdin
         try:
-            managed = await ManagedSubprocess.spawn(command, cwd=cwd, use_stdin=False, env=env)
+            managed = await ManagedSubprocess.spawn(command, cwd=cwd, use_stdin=use_stdin, env=env)
         except FileNotFoundError as exc:
             await self._task_service.transition_for_worker(
                 task_id,
@@ -123,10 +119,10 @@ class ProcessRunner:
                 task_id,
                 "task.failed",
                 {
-                    "message": "Claude runtime command not found",
+                    "message": "Codex runtime command not found",
                     "error_code": "WORKER_RUNTIME_UNAVAILABLE",
                     "error": str(exc),
-                    "command": self._settings.claude_command,
+                    "command": self._settings.codex_command,
                     "is_retryable": False,
                 },
             )
@@ -135,10 +131,21 @@ class ProcessRunner:
         async with self._lock:
             state.process = managed.process
 
+        prompt_payload = context.prompt_text
+        if state.pending_replies:
+            prompt_payload = (
+                f"{prompt_payload}\n\nAdditional follow-up instructions received before start:\n"
+                + "\n".join(f"- {item}" for item in state.pending_replies)
+            )
+            state.pending_replies.clear()
+
+        if use_stdin:
+            await managed.send_and_close_stdin(prompt_payload)
+
         managed.start_streaming(
             lambda line, source: self._handle_output_line(task_id, state, line, source)
         )
-        exit_code, timed_out = await managed.wait(self._settings.claude_timeout_seconds)
+        exit_code, timed_out = await managed.wait(self._settings.codex_timeout_seconds)
 
         current_status = await self._task_service.get_status(task_id)
         if current_status == TaskStatus.CANCELLED:
@@ -149,13 +156,13 @@ class ProcessRunner:
                 task_id,
                 TaskStatus.FAILED,
                 current_phase="runtime_timeout",
-                error_message="Claude runtime timed out",
+                error_message="Codex runtime timed out",
             )
             await self._event_service.append_event(
                 task_id,
                 "task.failed",
                 {
-                    "message": "Claude runtime timed out",
+                    "message": "Codex runtime timed out",
                     "error_code": "WORKER_TIMEOUT",
                     "is_retryable": True,
                 },
@@ -167,13 +174,13 @@ class ProcessRunner:
                 task_id,
                 TaskStatus.FAILED,
                 current_phase="runtime_exit_nonzero",
-                error_message=f"Claude runtime exited with code {exit_code}",
+                error_message=f"Codex runtime exited with code {exit_code}",
             )
             await self._event_service.append_event(
                 task_id,
                 "task.failed",
                 {
-                    "message": "Claude runtime exited with non-zero status",
+                    "message": "Codex runtime exited with non-zero status",
                     "error_code": "WORKER_EXIT_NONZERO",
                     "exit_code": exit_code,
                     "stderr_tail": state.stderr_tail[-20:],
@@ -182,8 +189,8 @@ class ProcessRunner:
             )
             return
 
-        summary = state.final_summary or "Claude worker completed successfully."
-        if state.runtime_reported_error:
+        summary = state.final_summary or "Codex worker completed successfully."
+        if is_blocked_outcome(summary):
             await self._task_service.transition_for_worker(
                 task_id,
                 TaskStatus.FAILED,
@@ -195,7 +202,7 @@ class ProcessRunner:
                 task_id,
                 "task.failed",
                 {
-                    "message": "Claude runtime reported an error outcome",
+                    "message": "Codex runtime reported a blocked outcome",
                     "error_code": "WORKER_BLOCKED",
                     "summary": summary,
                     "exit_code": exit_code,
@@ -231,58 +238,49 @@ class ProcessRunner:
             state.stderr_tail.append(line)
             if len(state.stderr_tail) > 200:
                 state.stderr_tail = state.stderr_tail[-200:]
-            await self._event_service.append_event(
-                task_id, "task.log", {"message": line, "source": source}
-            )
-            return
 
         try:
             payload = json.loads(line)
         except json.JSONDecodeError:
             await self._event_service.append_event(
-                task_id, "task.log", {"message": line, "source": source}
+                task_id,
+                "task.log",
+                {"message": line, "source": source},
             )
             return
 
         if not isinstance(payload, dict):
             await self._event_service.append_event(
-                task_id, "task.log", {"message": str(payload), "source": source}
-            )
-            return
-
-        if is_system_init(payload):
-            await self._event_service.append_event(
-                task_id, "task.log", {"message": "Claude runtime started", "source": source}
-            )
-            return
-
-        if is_result_event(payload):
-            result_text = extract_result_summary(payload)
-            if result_text:
-                state.final_summary = result_text
-            state.runtime_reported_error = is_error_result(payload)
-            await self._event_service.append_event(
-                task_id,
-                "task.progress",
-                {
-                    "message": "Claude runtime finished its turn",
-                    "is_error": state.runtime_reported_error,
-                    "subtype": extract_result_subtype(payload),
-                },
-            )
-            return
-
-        assistant_text = extract_assistant_text(payload)
-        if assistant_text:
-            await self._task_service.append_assistant_message(task_id, assistant_text)
-            state.final_summary = assistant_text
-
-        for tool_summary in extract_tool_use_summaries(payload):
-            await self._event_service.append_event(
                 task_id,
                 "task.log",
-                {"message": f"Tool call: {tool_summary}", "source": source},
+                {"message": str(payload), "source": source},
             )
+            return
+
+        assistant_message = extract_assistant_message(payload)
+        if isinstance(assistant_message, str) and assistant_message.strip():
+            assistant_message = assistant_message.strip()
+            await self._task_service.append_assistant_message(task_id, assistant_message)
+            state.final_summary = assistant_message
+
+        final_summary = extract_final_summary(payload)
+        if isinstance(final_summary, str) and final_summary.strip():
+            state.final_summary = final_summary.strip()
+
+        maybe_event_type = payload.get("event_type")
+        if maybe_event_type == "task.progress":
+            event_payload = payload.get("data")
+            if not isinstance(event_payload, dict):
+                event_payload = {"message": payload.get("message", "Worker progress update")}
+            await self._event_service.append_event(task_id, "task.progress", event_payload)
+            return
+
+        event_payload = dict(payload)
+        if "source" not in event_payload:
+            event_payload["source"] = source
+        if "message" not in event_payload:
+            event_payload["message"] = "Worker output"
+        await self._event_service.append_event(task_id, "task.log", event_payload)
 
     async def write_to_stdin(
         self, task_id: UUID, process: asyncio.subprocess.Process, content: str
@@ -295,5 +293,5 @@ class ProcessRunner:
         await self._event_service.append_event(
             task_id,
             "task.log",
-            {"message": "Forwarded follow-up to running Claude process"},
+            {"message": "Forwarded follow-up to running Codex process"},
         )

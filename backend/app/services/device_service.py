@@ -6,20 +6,24 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.models.device import Device
 from app.schemas.devices import DeviceHeartbeatRequest, DeviceRegisterRequest
 from app.services.exceptions import NotFoundError
+from app.repositories.device_repo import DeviceRepository
 from app.utils.datetime import utcnow
 
 
 class DeviceService:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        device_repo: DeviceRepository,
+    ) -> None:
         self._session_factory = session_factory
+        self._device_repo = device_repo
 
     async def register_device(self, user_id: UUID, payload: DeviceRegisterRequest) -> Device:
         async with self._session_factory() as session:
             device: Device | None = None
             if payload.device_id is not None:
-                device = await session.scalar(
-                    select(Device).where(Device.id == payload.device_id, Device.user_id == user_id)
-                )
+                device = await self._device_repo.get_by_id_and_user(session, payload.device_id, user_id)
 
             if device is None:
                 device_kwargs: dict[str, object] = {
@@ -48,9 +52,7 @@ class DeviceService:
 
     async def heartbeat(self, user_id: UUID, payload: DeviceHeartbeatRequest) -> Device:
         async with self._session_factory() as session:
-            device = await session.scalar(
-                select(Device).where(Device.id == payload.device_id, Device.user_id == user_id)
-            )
+            device = await self._device_repo.get_by_id_and_user(session, payload.device_id, user_id)
             if device is None:
                 raise NotFoundError("Device not found")
 
@@ -63,33 +65,15 @@ class DeviceService:
 
     async def list_devices(self, user_id: UUID) -> list[Device]:
         async with self._session_factory() as session:
-            devices = (
-                (
-                    await session.execute(
-                        select(Device)
-                        .where(Device.user_id == user_id)
-                        .order_by(Device.updated_at.desc())
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            return list(devices)
+            return await self._device_repo.list_by_user(session, user_id)
 
     async def get_most_recent(self, user_id: UUID) -> Device | None:
         async with self._session_factory() as session:
-            return await session.scalar(  # type: ignore[no-any-return]
-                select(Device)
-                .where(Device.user_id == user_id)
-                .order_by(Device.last_seen_at.desc().nulls_last())
-                .limit(1)
-            )
+            return await self._device_repo.get_most_recent(session, user_id)
 
     async def get_device(self, user_id: UUID, device_id: UUID) -> Device:
         async with self._session_factory() as session:
-            device = await session.scalar(
-                select(Device).where(Device.id == device_id, Device.user_id == user_id)
-            )
+            device = await self._device_repo.get_by_id_and_user(session, device_id, user_id)
             if device is None:
                 raise NotFoundError("Device not found")
             return device

@@ -18,8 +18,9 @@ from app.models.project_context import ProjectContext
 from app.models.task import Task
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, NotFoundError
-from app.workers.common.context import resolve_workdir
-from app.workers.common.subprocess_io import ManagedSubprocess
+from app.repositories.git_repo import GitOperationRepository
+from workers.common.context import resolve_workdir
+from workers.common.subprocess_io import ManagedSubprocess
 
 
 class GitService:
@@ -27,9 +28,11 @@ class GitService:
         self,
         session_factory: async_sessionmaker[AsyncSession],
         event_service: EventService,
+        git_repo: GitOperationRepository,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
+        self._git_repo = git_repo
 
     async def prepare_commit(self, user_id: UUID, task_id: UUID) -> GitOperation:
         async with self._session_factory() as session:
@@ -64,9 +67,7 @@ class GitService:
                 status_output=status_output,
                 diff_stat_output=diff_stat_output,
             )
-            session.add(operation)
-            await session.commit()
-            await session.refresh(operation)
+            operation = await self._git_repo.create(session, operation)
 
         return operation
 
@@ -139,15 +140,7 @@ class GitService:
         self, user_id: UUID, task_id: UUID, git_operation_id: UUID
     ) -> GitOperation:
         async with self._session_factory() as session:
-            operation = await session.scalar(
-                select(GitOperation)
-                .join(Task, Task.id == GitOperation.task_id)
-                .where(
-                    GitOperation.id == git_operation_id,
-                    GitOperation.task_id == task_id,
-                    Task.user_id == user_id,
-                )
-            )
+            operation = await self._git_repo.get_pending(session, git_operation_id, task_id, user_id)
             if operation is None:
                 raise NotFoundError("Git operation not found")
             if operation.status != GitOperationStatus.PENDING_REVIEW:
@@ -156,7 +149,7 @@ class GitService:
 
     async def _reload(self, git_operation_id: UUID) -> GitOperation:
         async with self._session_factory() as session:
-            operation = await session.get(GitOperation, git_operation_id)
+            operation = await self._git_repo.get_by_id(session, git_operation_id)
             if operation is None:
                 raise NotFoundError("Git operation not found")
             return operation
@@ -169,18 +162,10 @@ class GitService:
         commit_message: str | None = None,
         pushed_branch: str | None = None,
     ) -> None:
-        async with self._session_factory() as session:
-            operation = await session.get(GitOperation, git_operation_id)
-            if operation is None:
-                return
-            operation.status = status
-            if error_message is not None:
-                operation.error_message = error_message
-            if commit_message is not None:
-                operation.commit_message = commit_message
-            if pushed_branch is not None:
-                operation.pushed_branch = pushed_branch
-            await session.commit()
+        await self._git_repo.update_status(
+            self._session_factory(), git_operation_id, status,
+            error_message=error_message, commit_message=commit_message, pushed_branch=pushed_branch,
+        )
 
     async def _run_git_capture(self, cwd: str, args: list[str]) -> str:
         managed = await ManagedSubprocess.spawn(["git", *args], cwd=cwd, use_stdin=False)

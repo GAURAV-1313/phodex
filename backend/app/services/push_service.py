@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
 from app.models.push_subscription import PushSubscription
+from app.repositories.push_repo import PushRepository
 
 _FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging"
 
@@ -26,10 +27,11 @@ class PushService:
     """
 
     def __init__(
-        self, session_factory: async_sessionmaker[AsyncSession], settings: Settings
+        self, session_factory: async_sessionmaker[AsyncSession], settings: Settings, push_repo: PushRepository
     ) -> None:
         self._session_factory = session_factory
         self._settings = settings
+        self._push_repo = push_repo
         self._credentials: Credentials | None = None
         if settings.firebase_service_account_json and settings.firebase_project_id:
             try:
@@ -45,27 +47,17 @@ class PushService:
 
     async def register_token(self, user_id: UUID, fcm_token: str, platform: str) -> None:
         async with self._session_factory() as session:
-            existing = await session.scalar(
-                select(PushSubscription).where(PushSubscription.fcm_token == fcm_token)
-            )
+            existing = await self._push_repo.get_by_token(session, fcm_token)
             if existing is not None:
                 existing.user_id = user_id
                 existing.platform = platform
+                await session.commit()
             else:
-                session.add(
-                    PushSubscription(user_id=user_id, fcm_token=fcm_token, platform=platform)
-                )
-            await session.commit()
+                await self._push_repo.register_token(session, PushSubscription(user_id=user_id, fcm_token=fcm_token, platform=platform))
 
     async def unregister_token(self, user_id: UUID, fcm_token: str) -> None:
         async with self._session_factory() as session:
-            await session.execute(
-                delete(PushSubscription).where(
-                    PushSubscription.fcm_token == fcm_token,
-                    PushSubscription.user_id == user_id,
-                )
-            )
-            await session.commit()
+            await self._push_repo.unregister_token(session, fcm_token, user_id)
 
     async def notify_user(
         self, user_id: UUID, title: str, body: str, data: dict[str, str] | None = None
@@ -74,17 +66,7 @@ class PushService:
             return
 
         async with self._session_factory() as session:
-            tokens = (
-                (
-                    await session.execute(
-                        select(PushSubscription.fcm_token).where(
-                            PushSubscription.user_id == user_id
-                        )
-                    )
-                )
-                .scalars()
-                .all()
-            )
+            tokens = await self._push_repo.get_tokens_by_user(session, user_id)
         if not tokens:
             return
 

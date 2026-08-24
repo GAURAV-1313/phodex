@@ -16,7 +16,7 @@ from app.models.project_context import ProjectContext
 from app.models.synced_repository import SyncedRepository
 from app.models.task import Task
 from app.models.task_message import TaskMessage
-from app.workers.common.state import ExecutionContext
+from workers.common.state import ExecutionContext
 
 
 class ExecutionContextBuilder:

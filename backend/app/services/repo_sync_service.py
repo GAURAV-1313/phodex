@@ -10,12 +10,16 @@ from app.models.project_context import ProjectContext
 from app.models.synced_repository import SyncedRepository
 from app.schemas.repos import RepoSyncRequest
 from app.services.exceptions import NotFoundError
+from app.repositories.repo_repo import RepoRepository
 from app.utils.datetime import utcnow
 
 
 class RepoSyncService:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    def __init__(
+        self, session_factory: async_sessionmaker[AsyncSession], repo_repo: RepoRepository
+    ) -> None:
         self._session_factory = session_factory
+        self._repo_repo = repo_repo
 
     async def sync_repositories(
         self, user_id: UUID, payload: RepoSyncRequest
@@ -29,18 +33,7 @@ class RepoSyncService:
             if device is None:
                 raise NotFoundError("Device not found")
 
-            existing = (
-                (
-                    await session.execute(
-                        select(SyncedRepository).where(
-                            SyncedRepository.user_id == user_id,
-                            SyncedRepository.device_id == payload.device_id,
-                        )
-                    )
-                )
-                .scalars()
-                .all()
-            )
+            existing = await self._repo_repo.list_by_user_and_device(session, user_id, payload.device_id)
 
             existing_by_git_root = {repo.git_root: repo for repo in existing}
             seen_git_roots: set[str] = set()
@@ -63,7 +56,7 @@ class RepoSyncService:
                         metadata_json=item.metadata_json,
                         is_active=True,
                     )
-                    session.add(repo)
+                    repo = await self._repo_repo.create(session, repo)
                 else:
                     repo.name = item.name
                     repo.local_path = item.local_path
@@ -73,6 +66,7 @@ class RepoSyncService:
                     repo.last_scanned_at = scan_time
                     repo.metadata_json = item.metadata_json
                     repo.is_active = True
+                    repo = await self._repo_repo.update(session, repo)
                 touched.append(repo)
 
             for repo in existing:
@@ -85,38 +79,16 @@ class RepoSyncService:
 
             for repo in touched:
                 await session.refresh(repo)
-                # refresh() expires and only reloads column attributes, so a
-                # relationship assigned before commit would otherwise be
-                # wiped back to an unloaded state that can't lazy-load once
-                # the session closes.
                 repo.device = device
             return touched
 
     async def list_repositories(self, user_id: UUID) -> list[SyncedRepository]:
         async with self._session_factory() as session:
-            repos = (
-                (
-                    await session.execute(
-                        select(SyncedRepository)
-                        .where(SyncedRepository.user_id == user_id)
-                        .options(selectinload(SyncedRepository.device))
-                        .order_by(
-                            SyncedRepository.is_active.desc(), SyncedRepository.updated_at.desc()
-                        )
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            return list(repos)
+            return await self._repo_repo.list_by_user(session, user_id)
 
     async def get_repository(self, user_id: UUID, repo_id: UUID) -> SyncedRepository:
         async with self._session_factory() as session:
-            repo = await session.scalar(
-                select(SyncedRepository)
-                .where(SyncedRepository.id == repo_id, SyncedRepository.user_id == user_id)
-                .options(selectinload(SyncedRepository.device))
-            )
+            repo = await self._repo_repo.get_by_id(session, repo_id, user_id)
             if repo is None:
                 raise NotFoundError("Repository not found")
             return repo
@@ -125,19 +97,9 @@ class RepoSyncService:
         self, user_id: UUID, repo_id: UUID, name: str | None = None
     ) -> ProjectContext:
         async with self._session_factory() as session:
-            repo = await session.scalar(
-                select(SyncedRepository).where(
-                    SyncedRepository.id == repo_id, SyncedRepository.user_id == user_id
-                )
-            )
+            repo = await self._repo_repo.get_by_id_no_user(session, repo_id)
             if repo is None:
                 raise NotFoundError("Repository not found")
-
-            await session.execute(
-                update(ProjectContext)
-                .where(ProjectContext.user_id == user_id, ProjectContext.is_current.is_(True))
-                .values(is_current=False)
-            )
 
             context = ProjectContext(
                 user_id=user_id,
@@ -152,15 +114,8 @@ class RepoSyncService:
                 },
                 is_current=True,
             )
-            session.add(context)
-            await session.commit()
-            await session.refresh(context)
-            return context
+            return await self._repo_repo.select_repository(session, user_id, context)
 
     async def get_current_context(self, user_id: UUID) -> ProjectContext | None:
         async with self._session_factory() as session:
-            return await session.scalar(  # type: ignore[no-any-return]
-                select(ProjectContext)
-                .where(ProjectContext.user_id == user_id, ProjectContext.is_current.is_(True))
-                .order_by(ProjectContext.updated_at.desc())
-            )
+            return await self._repo_repo.get_current_context(session, user_id)

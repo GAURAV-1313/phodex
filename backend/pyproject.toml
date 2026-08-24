@@ -9,6 +9,13 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "-v --benchmark-min-rounds=50 --benchmark-sort=mean"
+
+markers = [
+    "benchmark: performance benchmarks",
+    "load: load tests",
+    "slow: slow tests",
+]
 
 [tool.mypy]
 python_version = "3.11"

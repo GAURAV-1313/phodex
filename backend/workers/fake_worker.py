@@ -8,7 +8,7 @@ from app.models.enums import TaskStatus
 from app.services.approval_service import ApprovalService
 from app.services.event_service import EventService
 from app.services.task_service import TaskService
-from app.workers.base import WorkerEngine
+from workers.base import WorkerEngine
 
 logger = structlog.get_logger(__name__)
 

@@ -11,6 +11,7 @@ from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, NotFoundError
 from app.services.push_service import PushService
 from app.services.redis_service import RedisService
+from app.repositories.approval_repo import ApprovalRepository
 from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:
@@ -24,11 +25,13 @@ class ApprovalService:
         event_service: EventService,
         redis: RedisService,
         push_service: PushService,
+        approval_repo: ApprovalRepository,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
         self._redis = redis
         self._push_service = push_service
+        self._approval_repo = approval_repo
         self._worker_dispatcher: WorkerDispatcher | None = None
 
     def set_worker_dispatcher(self, dispatcher: "WorkerDispatcher") -> None:
@@ -84,38 +87,11 @@ class ApprovalService:
 
     async def list_pending(self, user_id: UUID) -> list[ApprovalRequest]:
         async with self._session_factory() as session:
-            approvals = (
-                (
-                    await session.execute(
-                        select(ApprovalRequest)
-                        .join(Task, Task.id == ApprovalRequest.task_id)
-                        .where(
-                            Task.user_id == user_id,
-                            ApprovalRequest.status == ApprovalStatus.PENDING,
-                        )
-                        .order_by(ApprovalRequest.created_at.asc())
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            return list(approvals)
+            return await self._approval_repo.list_pending(session, user_id)
 
     async def list_for_task(self, user_id: UUID, task_id: UUID) -> list[ApprovalRequest]:
         async with self._session_factory() as session:
-            approvals = (
-                (
-                    await session.execute(
-                        select(ApprovalRequest)
-                        .join(Task, Task.id == ApprovalRequest.task_id)
-                        .where(Task.user_id == user_id, Task.id == task_id)
-                        .order_by(ApprovalRequest.created_at.asc())
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            return list(approvals)
+            return await self._approval_repo.list_for_task(session, user_id, task_id)
 
     async def approve(
         self, user_id: UUID, approval_id: UUID, note: str | None = None
@@ -181,12 +157,7 @@ class ApprovalService:
         note: str | None,
     ) -> ApprovalRequest:
         async with self._session_factory() as session:
-            approval = await session.scalar(
-                select(ApprovalRequest)
-                .join(Task, Task.id == ApprovalRequest.task_id)
-                .where(ApprovalRequest.id == approval_id, Task.user_id == user_id)
-                .with_for_update()
-            )
+            approval = await self._approval_repo.get_with_task(session, approval_id, user_id)
             if approval is None:
                 raise NotFoundError("Approval request not found")
             if approval.status != ApprovalStatus.PENDING:
@@ -198,17 +169,15 @@ class ApprovalService:
             if task.status != TaskStatus.WAITING_APPROVAL:
                 raise ConflictError("Task is not waiting for approval")
 
-            approval.status = status
-            approval.resolved_at = utcnow()
-            if note:
-                approval.payload_json = {**approval.payload_json, "resolution_note": note}
-
+            approval = await self._approval_repo.update_status(
+                session, approval, status, resolved_at=utcnow(), note=note,
+            )
             if status == ApprovalStatus.REJECTED:
                 task.status = TaskStatus.FAILED
                 task.error_message = "Approval rejected"
                 task.finished_at = utcnow()
                 task.current_phase = "approval_rejected"
+                await session.commit()
+                await session.refresh(task)
 
-            await session.commit()
-            await session.refresh(approval)
             return approval

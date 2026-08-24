@@ -1,4 +1,4 @@
-"""Claude-specific wiring on top of the shared subprocess worker orchestrator."""
+"""Codex-specific wiring on top of the shared subprocess worker orchestrator."""
 
 import asyncio
 
@@ -9,30 +9,25 @@ from app.services.approval_service import ApprovalService
 from app.services.event_service import EventService
 from app.services.task_service import TaskService
 from app.services.user_ai_settings_service import UserAiSettingsService
-from app.workers.claude.process_runner import ProcessRunner
-from app.workers.common.context import ExecutionContextBuilder
-from app.workers.common.orchestrator import SubprocessWorkerOrchestrator
+from workers.codex.process_runner import ProcessRunner
+from workers.common.context import ExecutionContextBuilder
+from workers.common.orchestrator import SubprocessWorkerOrchestrator
 
 
-class ClaudeWorkerEngine(SubprocessWorkerOrchestrator):
+class CodexWorkerEngine(SubprocessWorkerOrchestrator):
     """
-    Worker adapter that runs tasks through the Claude Code CLI in headless mode
-    (`claude -p ... --output-format stream-json`).
+    Production-oriented worker adapter for running a real Codex runtime command.
 
-    Configured through settings:
-      - CLAUDE_COMMAND
-      - CLAUDE_EXTRA_ARGS
-      - CLAUDE_PERMISSION_MODE
-      - CLAUDE_TIMEOUT_SECONDS
-      - CLAUDE_REQUIRE_INITIAL_APPROVAL
-      - CLAUDE_DEFAULT_WORKDIR
-
-    Unlike Codex, completion/failure is reported structurally by the CLI's
-    terminal `result` event (`is_error`) rather than an OUTCOME sentinel the
-    model is asked to emit, so no such convention appears in the prompt.
+    The runtime command and behavior are configured through settings:
+      - CODEX_COMMAND
+      - CODEX_ARGS
+      - CODEX_PROMPT_STDIN
+      - CODEX_TIMEOUT_SECONDS
+      - CODEX_REQUIRE_INITIAL_APPROVAL
+      - CODEX_DEFAULT_WORKDIR
     """
 
-    engine_label = "Claude"
+    engine_label = "Codex"
 
     def __init__(
         self,
@@ -45,11 +40,12 @@ class ClaudeWorkerEngine(SubprocessWorkerOrchestrator):
     ) -> None:
         lock = asyncio.Lock()
         context_builder = ExecutionContextBuilder(
-            default_workdir=settings.claude_default_workdir,
+            default_workdir=settings.codex_default_workdir,
             session_factory=session_factory,
             instructions=(
                 "Return concise operational logs. Do not include private chain-of-thought. "
-                "If you edit files, include file-change summaries."
+                "If you edit files, include file-change summaries. End the final response with "
+                "exactly one outcome line: OUTCOME: COMPLETED, OUTCOME: BLOCKED, or OUTCOME: FAILED."
             ),
         )
         process_runner = ProcessRunner(
@@ -65,8 +61,8 @@ class ClaudeWorkerEngine(SubprocessWorkerOrchestrator):
             approval_service=approval_service,
             context_builder=context_builder,
             process_runner=process_runner,
-            require_initial_approval=settings.claude_require_initial_approval,
-            initial_approval_risk_level=settings.claude_initial_approval_risk_level,
-            timeout_seconds=settings.claude_timeout_seconds,
+            require_initial_approval=settings.codex_require_initial_approval,
+            initial_approval_risk_level=settings.codex_initial_approval_risk_level,
+            timeout_seconds=settings.codex_timeout_seconds,
             lock=lock,
         )

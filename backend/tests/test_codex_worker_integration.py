@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import Settings
 from app.main import create_app
-from app.workers.codex.output_parser import is_blocked_outcome
+from workers.codex.output_parser import is_blocked_outcome
 
 
 def _write_stub_runtime(script_path) -> None:
