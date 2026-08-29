@@ -127,6 +127,47 @@ main {
   color: #fff;
 }
 
+.scroll-hint {
+  display: none;
+  margin-top: 8px;
+}
+
+.scroll-hint a {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.scroll-hint a:hover { color: var(--accent); }
+
+.scroll-hint .arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.scroll-hint a:hover .arrow { border-color: var(--accent); }
+
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+.scroll-hint .arrow svg { animation: bounce-down 1.5s ease-in-out infinite; }
+
+.desktop-only { display: inline-flex; }
+
 /* ── Mascot ── */
 .hero-right {
   display: flex;
@@ -502,7 +543,10 @@ footer a:hover { color: var(--text); }
     padding: 80px 0 60px;
     gap: 40px;
   }
-  .hero-left { max-width: 100%; }
+  .hero-left { max-width: 100%; text-align: center; }
+  .hero-left p { margin-left: auto; margin-right: auto; }
+  .scroll-hint { display: flex; justify-content: center; }
+  .desktop-only { display: none; }
   .hero-right { order: -1; }
   .mascot-container { width: 160px; height: 160px; }
   .features { grid-template-columns: 1fr; gap: 24px; }
@@ -575,10 +619,18 @@ footer a:hover { color: var(--text); }
     <div class="hero-left">
       <h1>Code from your phone.<br><span class="accent">Approved by you.</span></h1>
       <p>Send coding tasks to your laptop. Review changes before they're applied. A human-in-the-loop workflow for remote development.</p>
-      <a href="https://github.com/GAURAV-1313/phodex" target="_blank" rel="noopener" class="btn">
+      <a href="https://github.com/GAURAV-1313/phodex" target="_blank" rel="noopener" class="btn desktop-only">
         Get Started
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 6h7M6 3l3.5 3L6 9"/></svg>
       </a>
+      <div class="scroll-hint">
+        <a href="#preview">
+          <span class="arrow">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg>
+          </span>
+          Preview
+        </a>
+      </div>
     </div>
     <div class="hero-right">
       <div class="mascot-container">
