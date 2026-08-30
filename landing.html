@@ -21,14 +21,12 @@
   --font: 'Inter', -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #17151C;
-    --text: #F5F3F7;
-    --muted: #A79FB0;
-    --border: #322D3B;
-    --accent: #8B7FFF;
-  }
+:root[data-theme="dark"] {
+  --bg: #17151C;
+  --text: #F5F3F7;
+  --muted: #A79FB0;
+  --border: #322D3B;
+  --accent: #8B7FFF;
 }
 
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
@@ -888,6 +886,12 @@ footer a:hover { color: var(--text); }
 
 <script>
 (function() {
+  // Time-based theme: light 7am–7pm, dark 7pm–7am
+  const hour = new Date().getHours();
+  if (hour < 7 || hour >= 19) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+
   const crest = document.getElementById('crest');
   const crestDot = document.getElementById('crest-dot');
   const beak = document.getElementById('beak');
