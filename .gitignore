@@ -1,0 +1,7 @@
+.vercel
+.DS_Store
+*.jpeg
+*.jpg
+*.png
+.claude/
+.opencode/
