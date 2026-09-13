@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/repositories/mock/mock_backend_store.dart';
 import 'package:mobile/features/approvals/presentation/approvals_screen.dart';
+import 'package:mobile/shared/widgets/stitch_ui.dart';
 
 import 'test_helpers.dart';
 
@@ -31,15 +32,31 @@ void main() {
     );
     await settle(tester);
 
-    expect(textAnywhere('Pending Approval'), findsOneWidget);
+    expect(textAnywhere('Approvals'), findsOneWidget);
+    expect(find.byKey(const Key('stitch-back-button')), findsOneWidget);
+    expect(textAnywhere('1 pending'), findsOneWidget);
+    expect(
+      textAnywhere(
+        'Approvals are gated on your phone — nothing runs until you say so.',
+      ),
+      findsOneWidget,
+    );
     expect(textAnywhere('Approve file operation'), findsOneWidget);
+    // The approval is attributed to its task.
+    expect(
+      find.textContaining('Investigate CI failure', skipOffstage: false),
+      findsOneWidget,
+    );
     expect(
       find.textContaining('git add -A && git commit', skipOffstage: false),
       findsOneWidget,
     );
     expect(textAnywhere('MEDIUM RISK'), findsOneWidget);
+    expect(find.byType(TaskStatusChip, skipOffstage: false), findsOneWidget);
+    expect(textAnywhere('Needs approval'), findsOneWidget);
     expect(textAnywhere('Approve'), findsOneWidget);
     expect(textAnywhere('Reject'), findsOneWidget);
+    expect(textAnywhere('View full execution plan'), findsOneWidget);
   });
 
   testWidgets('Shows the empty state once nothing is pending', (tester) async {
@@ -54,8 +71,12 @@ void main() {
     );
     await settle(tester);
 
-    expect(textAnywhere('Nothing needs your approval'), findsOneWidget);
-    expect(textAnywhere('Pending Approval'), findsNothing);
+    expect(textAnywhere('Nothing waiting on you'), findsOneWidget);
+    expect(
+      textAnywhere('Approval requests from your agent show up here.'),
+      findsOneWidget,
+    );
+    expect(textAnywhere('1 pending'), findsNothing);
   });
 
   testWidgets('Approving removes the request from the list', (tester) async {
@@ -73,7 +94,7 @@ void main() {
     await settle(tester);
     await settle(tester);
 
-    expect(textAnywhere('Nothing needs your approval'), findsOneWidget);
+    expect(textAnywhere('Nothing waiting on you'), findsOneWidget);
   });
 
   testWidgets('Rejecting prompts for an optional reason before resolving it', (
@@ -97,7 +118,7 @@ void main() {
     // Cancelling the reason dialog must not resolve the approval.
     await tester.tap(textAnywhere('Cancel'));
     await settle(tester);
-    expect(textAnywhere('Pending Approval'), findsOneWidget);
+    expect(textAnywhere('1 pending'), findsOneWidget);
 
     await tester.tap(rejectButton);
     await settle(tester);
@@ -109,7 +130,7 @@ void main() {
     await settle(tester);
     await settle(tester);
 
-    expect(textAnywhere('Nothing needs your approval'), findsOneWidget);
+    expect(textAnywhere('Nothing waiting on you'), findsOneWidget);
     final pending = store.listPendingApprovals();
     expect(pending, isEmpty);
   });

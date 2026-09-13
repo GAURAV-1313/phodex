@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/domain/models/models.dart';
 import 'package:mobile/core/repositories/mock/mock_backend_store.dart';
 import 'package:mobile/features/account/presentation/account_screen.dart';
 
@@ -47,15 +48,53 @@ void main() {
     expect(find.text('USAGE THIS MONTH'), findsOneWidget);
     expect(find.text('Automated tasks'), findsOneWidget);
 
-    // The Desktop runtime card sits right at the edge of what a ListView's
-    // Sliver builds without scrolling — a modest scroll makes finding it
-    // reliable instead of dependent on an unscrolled boundary condition.
+    // The Runtime card sits right at the edge of what a ListView's Sliver
+    // builds without scrolling — a modest scroll makes finding it reliable
+    // instead of dependent on an unscrolled boundary condition.
     await scrollDown(tester, 300);
 
-    // The seeded device is online — the runtime card should say so.
-    // _SectionLabel renders its text uppercased.
-    expect(find.text('DESKTOP RUNTIME'), findsOneWidget);
-    expect(find.text('LIVE'), findsOneWidget);
+    // The seeded runner is online — the runtime card names it and says so.
+    // StitchSectionLabel renders its text uppercased.
+    expect(find.text('RUNTIME'), findsOneWidget);
+    expect(find.text("Gaurav's Mac · Online"), findsOneWidget);
+    expect(find.text('Change runtime'), findsOneWidget);
+    expect(find.text('Connect desktop'), findsOneWidget);
+    // Desktop runtime: no GitHub token to manage.
+    expect(find.text('GitHub token'), findsNothing);
+  });
+
+  testWidgets('Cloud runtime exposes the GitHub token row and sheet', (
+    tester,
+  ) async {
+    final store = MockBackendStore(enableDynamicSimulation: false);
+
+    await tester.pumpWidget(
+      wrapWithTestApp(
+        const AccountScreen(),
+        store: store,
+        runtimeMode: RuntimeMode.cloud,
+      ),
+    );
+    await settle(tester);
+    await scrollDown(tester, 600);
+
+    expect(find.text('Phodex Cloud · Online'), findsOneWidget);
+    expect(find.text('GitHub token'), findsOneWidget);
+    expect(find.text('Not configured'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('GitHub token'));
+    await tester.tap(find.text('GitHub token'));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const Key('github-token-field')),
+      'github_pat_secret',
+    );
+    await tester.tap(find.byKey(const Key('github-token-save')));
+    await settle(tester);
+    await settle(tester);
+
+    expect(store.hasGithubToken, isTrue);
+    expect(find.text('Configured'), findsOneWidget);
   });
 
   testWidgets('System settings rows are real, tappable actions', (
@@ -71,18 +110,17 @@ void main() {
     await scrollDown(tester, 600);
 
     expect(find.text('AI engine'), findsOneWidget);
-    expect(find.text('Desktop connection'), findsOneWidget);
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Privacy & security'), findsOneWidget);
     expect(find.text('Support center'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
 
-    // Every row here now does something real (navigates via go_router, or —
-    // for Appearance — opens a picker directly). Rows that navigate can't be
-    // tapped from this harness (no GoRouter ancestor, same boundary as the
-    // AI engine / Privacy & security rows) — Appearance is covered by its
-    // own dedicated test below instead.
+    // Every row here does something real (navigates via go_router, or — for
+    // Appearance — opens a picker directly). Rows that navigate can't be
+    // tapped from this harness (no GoRouter ancestor) — Appearance is
+    // covered by its own dedicated test below instead. "Desktop connection"
+    // moved into the Runtime card as "Connect desktop".
   });
 
   testWidgets('Appearance opens a real System/Light/Dark picker', (
