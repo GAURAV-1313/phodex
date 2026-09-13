@@ -15,7 +15,7 @@ class IssueCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
         color: context.colors.accentError.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadii.button),
         border: Border.all(
           color: context.colors.accentError.withValues(alpha: 0.5),
         ),
@@ -25,13 +25,13 @@ class IssueCard extends StatelessWidget {
         children: [
           Text(
             issue.code ?? issue.type,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: context.text.bodyMedium?.copyWith(
               color: context.colors.accentError,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSpacing.s4),
-          Text(issue.message, style: Theme.of(context).textTheme.bodyMedium),
+          Text(issue.message, style: context.text.bodyMedium),
         ],
       ),
     );

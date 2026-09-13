@@ -65,6 +65,33 @@ class AppColors extends ThemeExtension<AppColors> {
   /// separately-lerped field.
   Color get mascotAccent => accentPrimary;
 
+  /// Whether this palette is a dark one — derived from the ground color so
+  /// it can never disagree with the actual colors.
+  bool get isDark => bgPrimary.computeLuminance() < 0.5;
+
+  /// Foreground for anything painted on [accentPrimary] (filled buttons,
+  /// accent chips). Always white: both accents are dark enough for it.
+  Color get onAccent => const Color(0xFFFFFFFF);
+
+  /// Elevation shadow for cards and the dock. Black shadows vanish (or
+  /// muddy) on a dark ground, so dark mode uses a stronger alpha.
+  Color get shadow =>
+      isDark ? const Color(0x66000000) : const Color(0x0F000000);
+
+  /// Heavier shadow for floating chrome (the dock, sheets).
+  Color get shadowStrong =>
+      isDark ? const Color(0x99000000) : const Color(0x1F000000);
+
+  /// Scrim behind sheets/dialogs.
+  Color get scrim => isDark ? const Color(0xB3000000) : const Color(0x66000000);
+
+  /// The "terminal" surface used for logs and command output — the one
+  /// place the UI is deliberately dark in both themes, so it stays
+  /// consistent instead of flipping with the theme.
+  Color get terminalBg => const Color(0xFF17151C);
+  Color get terminalText => const Color(0xFFE6E2EC);
+  Color get terminalMuted => const Color(0xFF8E8798);
+
   /// The app's warm-cream-plus-indigo light theme.
   static const light = AppColors(
     bgPrimary: Color(0xFFFBF9F7),
