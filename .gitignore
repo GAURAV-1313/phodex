@@ -6,6 +6,7 @@
 .claude/
 .opencode/
 .env*
+!.env*.example
 
 # Generated / local caches — never belong in the repo
 graphify-out/

@@ -219,6 +219,17 @@ An `ngrok`/Cloudflare Tunnel URL works the same way if you'd rather use one of
 those instead: just set `PUBLIC_BASE_URL` to whatever public URL they give
 you.
 
+## Cloud runtime (no laptop required)
+
+Everything above runs the backend on your laptop. `RUNTIME_MODE=cloud` runs
+the same backend on a server: users connect GitHub repositories (cloned under
+`WORKSPACES_ROOT`), the server registers itself as a "Phodex Cloud" device,
+and the worker engine executes tasks there — with the laptop closed. It adds
+`POST /repos/github/connect`, `PUT /repos/github/credentials`, `GET /runtime`,
+`GET /runtime/public`, and `POST /auth/demo` (a public demo account), plus a
+Fly.io config and a fourth worker engine backed by Anthropic Managed Agents.
+Full walkthrough: [docs/cloud-runtime.md](docs/cloud-runtime.md).
+
 ## Laptop-only Codex worker test
 For testing the real worker before deployment, use:
 - [/Users/gaurav/phodex/backend/.env.laptop.example](/Users/gaurav/phodex/backend/.env.laptop.example)
@@ -265,7 +276,7 @@ output parsing, and approval/timeout settings.
 
 ### Worker selection (deployment)
 Use environment variables:
-- `WORKER_ENGINE=fake` (default), `WORKER_ENGINE=codex`, or `WORKER_ENGINE=claude`
+- `WORKER_ENGINE=fake` (default), `WORKER_ENGINE=codex`, `WORKER_ENGINE=claude`, or `WORKER_ENGINE=managed` (Anthropic Managed Agents, cloud only — see docs/cloud-runtime.md)
 
 **Codex** (`app/workers/codex/`):
 - `CODEX_COMMAND` (example: `codex`)

@@ -21,3 +21,28 @@ jobs:
       - run: ruff check app tests
       - run: mypy app
       - run: pytest -q
+
+  deploy:
+    # Deploys the cloud runtime to Fly.io on pushes to main. Skipped until the
+    # FLY_API_TOKEN repository secret exists (see backend/docs/cloud-runtime.md).
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check deploy credentials
+        id: gate
+        run: |
+          if [ -n "$FLY_API_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "FLY_API_TOKEN not set; skipping deploy."
+          fi
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Deploy
+        if: steps.gate.outputs.enabled == 'true'
+        run: flyctl deploy --remote-only --config fly.toml
