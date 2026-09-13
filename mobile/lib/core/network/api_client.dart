@@ -10,6 +10,7 @@ class ApiConfig {
     required this.googleIdToken,
     this.googleServerClientId = '',
     this.googleIosClientId = '',
+    this.cloudBaseUrl = 'https://phodex-cloud.fly.dev',
   });
 
   final bool useNetwork;
@@ -17,6 +18,11 @@ class ApiConfig {
   final String googleIdToken;
   final String googleServerClientId;
   final String googleIosClientId;
+
+  /// Address of the hosted Phodex Cloud backend offered during onboarding
+  /// ("Where should tasks run?"). Overridable at build time via
+  /// `PHODEX_CLOUD_URL` so staging builds can point elsewhere.
+  final String cloudBaseUrl;
 }
 
 class PhodexApiClient {
@@ -53,6 +59,28 @@ class PhodexApiClient {
   /// "Connect to desktop" flow.
   void updateBaseUrl(String url) {
     _dio.options.baseUrl = url;
+  }
+
+  /// Asks a candidate backend what it is (desktop vs. Phodex Cloud, demo
+  /// account available) without touching this client's configuration.
+  /// Returns null when the address is unreachable or not a Phodex backend.
+  static Future<Map<String, dynamic>?> probeRuntime(String url) async {
+    final probe = Dio(
+      BaseOptions(
+        baseUrl: url,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ),
+    );
+    try {
+      final response = await probe.get<Map<String, dynamic>>('/runtime/public');
+      if (response.statusCode != 200) return null;
+      return response.data;
+    } on DioException {
+      return null;
+    } finally {
+      probe.close();
+    }
   }
 
   /// Checks whether a candidate backend address is reachable, without
@@ -148,6 +176,22 @@ class PhodexApiClient {
     _accessToken = null;
     _loginFuture = _login(idToken);
     return _loginFuture!;
+  }
+
+  /// Signs into the server's public demo account (Phodex Cloud). Returns
+  /// the full auth payload so callers can read the user profile.
+  Future<Map<String, dynamic>> loginAsDemo() async {
+    _accessToken = null;
+    _loginFuture = null;
+    final response = await _dio.post<Map<String, dynamic>>('/auth/demo');
+    final data = response.data ?? <String, dynamic>{};
+    final token = data['access_token'] as String?;
+    if (token == null || token.isEmpty) {
+      throw StateError('Backend demo login did not include access_token');
+    }
+    _accessToken = token;
+    unawaited(_writePersistedToken(token));
+    return data;
   }
 
   void clearSession() {

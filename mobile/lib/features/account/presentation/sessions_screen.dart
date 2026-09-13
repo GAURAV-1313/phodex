@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile/core/domain/models/models.dart';
 import 'package:mobile/features/account/application/sessions_controller.dart';
 import 'package:mobile/shared/theme/theme.dart';
+import 'package:mobile/shared/widgets/phodex_mascot.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
 
 class SessionsScreen extends ConsumerWidget {
@@ -14,34 +15,27 @@ class SessionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(sessionsProvider);
     return StitchScaffold(
+      key: const Key('sessions-screen'),
       active: StitchTab.account,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, stitchDockClearance),
+        padding: stitchScreenPadding,
         children: [
           StitchHeader(
             title: 'Privacy & security',
             onBack: () => context.pop(),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.s24),
           Text(
             'Signed-in sessions across your devices. Sign out of any you '
             "don't recognize.",
-            style: TextStyle(color: context.colors.textSecondary, height: 1.5),
+            style: context.text.bodyMedium,
           ),
-          const SizedBox(height: 24),
-          value.when(
-            data: (sessions) => _SessionsList(sessions: sessions),
-            loading: () => const Padding(
-              padding: EdgeInsets.only(top: 60),
-              child: PhodexLoading(),
-            ),
-            error: (error, _) => Padding(
-              padding: const EdgeInsets.only(top: 60),
-              child: StitchErrorState(
-                title: "Couldn't load your sessions",
-                onRetry: () => ref.invalidate(sessionsProvider),
-              ),
-            ),
+          const SizedBox(height: AppSpacing.s24),
+          StitchAsyncView<List<SessionInfo>>(
+            value: value,
+            errorTitle: "Couldn't load your sessions",
+            onRetry: () => ref.invalidate(sessionsProvider),
+            builder: (context, sessions) => _SessionsList(sessions: sessions),
           ),
         ],
       ),
@@ -92,25 +86,42 @@ class _SessionsListState extends ConsumerState<_SessionsList> {
   @override
   Widget build(BuildContext context) {
     final sessions = widget.sessions;
-    final hasOthers = sessions.any((session) => !session.isCurrent);
+    final current = sessions.where((session) => session.isCurrent).toList();
+    final others = sessions.where((session) => !session.isCurrent).toList();
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final session in sessions) ...[
-          _SessionTile(
-            session: session,
-            revoking: _revokingId == session.id,
-            onRevoke: session.isCurrent ? null : () => _revoke(session.id),
-          ),
-          const SizedBox(height: 12),
+        for (final session in current) ...[
+          _SessionTile(session: session, revoking: false, onRevoke: null),
+          const SizedBox(height: AppSpacing.s12),
         ],
-        const SizedBox(height: 12),
-        StitchPrimaryButton(
-          label: _revokingOthers
-              ? 'Signing out…'
-              : 'Sign out of all other devices',
-          onPressed: (!hasOthers || _revokingOthers) ? null : _revokeOthers,
-        ),
+        if (others.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.s24),
+            child: StitchEmptyState(
+              mood: MascotMood.resting,
+              title: 'No other sessions',
+              message: "You're only signed in on this device.",
+            ),
+          )
+        else ...[
+          for (final session in others) ...[
+            _SessionTile(
+              session: session,
+              revoking: _revokingId == session.id,
+              onRevoke: () => _revoke(session.id),
+            ),
+            const SizedBox(height: AppSpacing.s12),
+          ],
+          const SizedBox(height: AppSpacing.s12),
+          StitchPrimaryButton(
+            label: _revokingOthers
+                ? 'Signing out…'
+                : 'Sign out of all other devices',
+            loading: _revokingOthers,
+            onPressed: _revokeOthers,
+          ),
+        ],
       ],
     );
   }
@@ -129,44 +140,41 @@ class _SessionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final dateFormat = DateFormat.yMMMd().add_jm();
     return StitchCard(
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: AppSpacing.s40,
+            height: AppSpacing.s40,
             decoration: BoxDecoration(
               color: session.isCurrent
-                  ? context.colors.accentPrimarySoft
-                  : context.colors.bgInput,
-              borderRadius: BorderRadius.circular(12),
+                  ? colors.accentPrimarySoft
+                  : colors.bgInput,
+              borderRadius: BorderRadius.circular(AppRadii.chip),
             ),
             child: Icon(
               Icons.devices_rounded,
+              size: 20,
               color: session.isCurrent
-                  ? context.colors.accentPrimary
-                  : context.colors.textMuted,
+                  ? colors.accentPrimary
+                  : colors.textMuted,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   session.isCurrent ? 'This device' : 'Other device',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: context.text.titleMedium,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: AppSpacing.s2),
                 Text(
                   'Signed in ${dateFormat.format(session.createdAt.toLocal())}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: context.colors.textSecondary,
-                  ),
+                  style: context.text.bodySmall,
                 ),
               ],
             ),
@@ -174,15 +182,17 @@ class _SessionTile extends StatelessWidget {
           if (onRevoke != null)
             revoking
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: AppSpacing.s20,
+                    height: AppSpacing.s20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : TextButton(
                     onPressed: onRevoke,
                     child: Text(
                       'Sign out',
-                      style: TextStyle(color: context.colors.accentError),
+                      style: context.text.labelLarge?.copyWith(
+                        color: colors.accentError,
+                      ),
                     ),
                   ),
         ],

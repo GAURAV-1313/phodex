@@ -32,6 +32,85 @@ class MockBackendStore {
 
   final List<SyncedRepository> _repositories = <SyncedRepository>[];
 
+  /// Which runtime the mock pretends to be. Tests flip this to exercise the
+  /// cloud-specific UI without a real backend.
+  RuntimeMode runtimeMode = RuntimeMode.desktop;
+  List<SyncedRepository>? _desktopRepositories;
+
+  /// Mirrors what choosing a runtime means for a real backend: in cloud mode
+  /// the same projects live in Phodex Cloud workspaces (GitHub-sourced), in
+  /// desktop mode they are the laptop's on-disk repositories.
+  void switchRuntime(RuntimeMode mode) {
+    if (mode == runtimeMode) return;
+    runtimeMode = mode;
+    if (mode == RuntimeMode.cloud) {
+      _desktopRepositories ??= List<SyncedRepository>.from(_repositories);
+      final cloud = _desktopRepositories!.map(_asCloudRepository).toList();
+      _repositories
+        ..clear()
+        ..addAll(cloud);
+    } else if (_desktopRepositories != null) {
+      _repositories
+        ..clear()
+        ..addAll(_desktopRepositories!);
+    }
+    final selected = _selectedContext;
+    if (selected?.syncedRepositoryId != null) {
+      final repo = _repositories.firstWhere(
+        (r) => r.id == selected!.syncedRepositoryId,
+        orElse: () => _repositories.first,
+      );
+      _selectedContext = ProjectContext(
+        id: selected!.id,
+        userId: selected.userId,
+        sourceType: repo.isCloud
+            ? ProjectContextSourceType.github
+            : ProjectContextSourceType.localSynced,
+        syncedRepositoryId: repo.id,
+        name: selected.name,
+        repoUrl: repo.remoteUrl,
+        branch: repo.currentBranch,
+        metadata: {
+          'local_path': repo.localPath,
+          'git_root': repo.gitRoot,
+          'device_id': repo.deviceId,
+          if (repo.isCloud) 'source': 'github',
+        },
+        createdAt: selected.createdAt,
+        updatedAt: DateTime.now().toUtc(),
+      );
+    }
+  }
+
+  SyncedRepository _asCloudRepository(SyncedRepository repo) {
+    final gitRoot = '/srv/phodex/workspaces/${_user.id}/gaurav__${repo.name}';
+    return SyncedRepository(
+      id: repo.id,
+      userId: repo.userId,
+      deviceId: 'dev_cloud_001',
+      deviceName: 'Phodex Cloud',
+      name: repo.name,
+      localPath: gitRoot,
+      gitRoot: gitRoot,
+      currentBranch: repo.currentBranch,
+      defaultBranch: repo.defaultBranch,
+      isActive: repo.isActive,
+      lastScannedAt: repo.lastScannedAt,
+      lastOpenedAt: repo.lastOpenedAt,
+      metadata: {
+        ...repo.metadata,
+        'source': 'github',
+        'url': 'https://github.com/gaurav/${repo.name}.git',
+        'owner': 'gaurav',
+        'repo': repo.name,
+      },
+      createdAt: repo.createdAt,
+      updatedAt: repo.updatedAt,
+    );
+  }
+
+  bool hasGithubToken = false;
+
   ProjectContext? _selectedContext;
 
   int _idCounter = 40;
@@ -392,6 +471,66 @@ class MockBackendStore {
     return List<SyncedRepository>.unmodifiable(_repositories);
   }
 
+  RuntimeInfo getRuntimeInfo() => RuntimeInfo(
+    mode: runtimeMode,
+    runnerName: runtimeMode == RuntimeMode.cloud
+        ? 'Phodex Cloud'
+        : "Gaurav's Mac",
+    runnerOnline: true,
+    runnerLastSeenAt: DateTime.now().toUtc(),
+    hasGithubToken: hasGithubToken,
+    demoAvailable: runtimeMode == RuntimeMode.cloud,
+    workerEngine: 'claude',
+  );
+
+  void setGithubToken(bool configured) => hasGithubToken = configured;
+
+  /// Mirrors `POST /repos/github/connect`: registers a cloud-cloned repo
+  /// under the synthetic "Phodex Cloud" device (or refreshes an existing one).
+  SyncedRepository addGithubRepository({required String url, String? branch}) {
+    final normalized = url.trim().replaceAll(RegExp(r'\.git$'), '');
+    final segments = normalized.split('/').where((s) => s.isNotEmpty).toList();
+    final name = segments.isEmpty ? 'repository' : segments.last;
+    final owner = segments.length >= 2
+        ? segments[segments.length - 2]
+        : 'github';
+    final gitRoot = '/srv/phodex/workspaces/${_user.id}/${owner}__$name';
+    final now = DateTime.now().toUtc();
+    final existingIndex = _repositories.indexWhere((r) => r.gitRoot == gitRoot);
+    final repo = SyncedRepository(
+      id: existingIndex == -1
+          ? _nextId('repo')
+          : _repositories[existingIndex].id,
+      userId: _user.id,
+      deviceId: 'dev_cloud_001',
+      deviceName: 'Phodex Cloud',
+      name: name,
+      localPath: gitRoot,
+      gitRoot: gitRoot,
+      currentBranch: branch ?? 'main',
+      defaultBranch: 'main',
+      isActive: true,
+      lastScannedAt: now,
+      lastOpenedAt: now,
+      metadata: {
+        'source': 'github',
+        'url': 'https://github.com/$owner/$name.git',
+        'owner': owner,
+        'repo': name,
+      },
+      createdAt: existingIndex == -1
+          ? now
+          : _repositories[existingIndex].createdAt,
+      updatedAt: now,
+    );
+    if (existingIndex == -1) {
+      _repositories.insert(0, repo);
+    } else {
+      _repositories[existingIndex] = repo;
+    }
+    return repo;
+  }
+
   SyncedRepository getRepository(String repoId) {
     return _repositories.firstWhere((repo) => repo.id == repoId);
   }
@@ -402,10 +541,12 @@ class MockBackendStore {
     _selectedContext = ProjectContext(
       id: _nextId('ctx'),
       userId: _user.id,
-      sourceType: ProjectContextSourceType.localSynced,
+      sourceType: repo.isCloud
+          ? ProjectContextSourceType.github
+          : ProjectContextSourceType.localSynced,
       syncedRepositoryId: repo.id,
       name: name ?? '${repo.name} (${repo.currentBranch ?? 'main'})',
-      repoUrl: null,
+      repoUrl: repo.remoteUrl,
       branch: repo.currentBranch,
       metadata: {
         'local_path': repo.localPath,
@@ -419,6 +560,23 @@ class MockBackendStore {
   }
 
   ProjectContext? getSelectedProjectContext() => _selectedContext;
+
+  /// Test helper: forget every seeded task (and its messages, events, and
+  /// approvals) so a screen's "no tasks yet" state can be exercised.
+  void clearTasks() {
+    _tasks.clear();
+    _messagesByTask.clear();
+    _eventsByTask.clear();
+    _issuesByTask.clear();
+    _approvalsById.clear();
+  }
+
+  /// Test helper: forget every synced repository and the selected context
+  /// so the "no repos synced yet" state can be exercised.
+  void clearRepositories() {
+    _repositories.clear();
+    _selectedContext = null;
+  }
 
   AccountSummary getAccountSummary() {
     return AccountSummary(

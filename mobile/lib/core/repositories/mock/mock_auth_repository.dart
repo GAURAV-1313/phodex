@@ -12,4 +12,10 @@ class MockAuthRepository implements AuthRepository {
     await Future<void>.delayed(const Duration(milliseconds: 120));
     return _store.user;
   }
+
+  @override
+  Future<UserProfile> signInAsDemo() async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return _store.user;
+  }
 }

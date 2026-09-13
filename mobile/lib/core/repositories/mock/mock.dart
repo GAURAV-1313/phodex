@@ -6,5 +6,6 @@ export 'mock_backend_store.dart';
 export 'mock_git_ops_repository.dart';
 export 'mock_push_repository.dart';
 export 'mock_repo_repository.dart';
+export 'mock_runtime_repository.dart';
 export 'mock_session_stream_repository.dart';
 export 'mock_task_repository.dart';

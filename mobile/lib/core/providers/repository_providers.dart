@@ -31,6 +31,10 @@ const _baseUrlFromEnv = String.fromEnvironment(
   'PHODEX_BASE_URL',
   defaultValue: 'http://10.0.2.2:8000',
 );
+const _cloudUrlFromEnv = String.fromEnvironment(
+  'PHODEX_CLOUD_URL',
+  defaultValue: 'https://phodex-cloud.fly.dev',
+);
 const _googleIdTokenFromEnv = String.fromEnvironment('PHODEX_GOOGLE_ID_TOKEN');
 const _googleServerClientIdFromEnv = String.fromEnvironment(
   'PHODEX_GOOGLE_SERVER_CLIENT_ID',
@@ -47,6 +51,7 @@ final apiConfigProvider = Provider<ApiConfig>((ref) {
     googleIdToken: _googleIdTokenFromEnv,
     googleServerClientId: _googleServerClientIdFromEnv,
     googleIosClientId: _googleIosClientIdFromEnv,
+    cloudBaseUrl: _cloudUrlFromEnv,
   );
 });
 
@@ -88,6 +93,13 @@ final repoRepositoryProvider = Provider<RepoRepository>((ref) {
     return NetworkRepoRepository(ref.watch(apiClientProvider));
   }
   return MockRepoRepository(ref.watch(mockBackendStoreProvider));
+});
+
+final runtimeRepositoryProvider = Provider<RuntimeRepository>((ref) {
+  if (ref.watch(apiConfigProvider).useNetwork) {
+    return NetworkRuntimeRepository(ref.watch(apiClientProvider));
+  }
+  return MockRuntimeRepository(ref.watch(mockBackendStoreProvider));
 });
 
 final accountRepositoryProvider = Provider<AccountRepository>((ref) {

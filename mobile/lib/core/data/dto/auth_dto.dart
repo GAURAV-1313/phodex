@@ -13,7 +13,7 @@ class UserOutDto {
   });
 
   final String id;
-  final String googleSub;
+  final String? googleSub;
   final String email;
   final String name;
   final String? avatarUrl;
@@ -23,7 +23,7 @@ class UserOutDto {
   factory UserOutDto.fromJson(Map<String, dynamic> json) {
     return UserOutDto(
       id: json['id'] as String,
-      googleSub: json['google_sub'] as String,
+      googleSub: json['google_sub'] as String?,
       email: json['email'] as String,
       name: json['name'] as String,
       avatarUrl: json['avatar_url'] as String?,

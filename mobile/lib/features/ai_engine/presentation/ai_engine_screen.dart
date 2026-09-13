@@ -13,33 +13,26 @@ class AiEngineScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(aiSettingsStatusProvider);
     return StitchScaffold(
+      key: const Key('ai-engine-screen'),
       active: StitchTab.account,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, stitchDockClearance),
+        padding: stitchScreenPadding,
         children: [
           StitchHeader(title: 'AI engine', onBack: () => context.pop()),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.s24),
           Text(
             'Phodex uses whatever Codex or Claude CLI is already logged in '
             'on your desktop by default. Setting a key below overrides that '
             'for your own tasks only — leave it blank to keep using the '
             'desktop login.',
-            style: TextStyle(color: context.colors.textSecondary, height: 1.5),
+            style: context.text.bodyMedium,
           ),
-          const SizedBox(height: 28),
-          value.when(
-            data: (status) => _AiEngineForm(status: status),
-            loading: () => const Padding(
-              padding: EdgeInsets.only(top: 60),
-              child: PhodexLoading(),
-            ),
-            error: (error, _) => Padding(
-              padding: const EdgeInsets.only(top: 60),
-              child: StitchErrorState(
-                title: "Couldn't load AI engine settings",
-                onRetry: () => ref.invalidate(aiSettingsStatusProvider),
-              ),
-            ),
+          const SizedBox(height: AppSpacing.s24),
+          StitchAsyncView<AiSettingsStatus>(
+            value: value,
+            errorTitle: "Couldn't load AI engine settings",
+            onRetry: () => ref.invalidate(aiSettingsStatusProvider),
+            builder: (context, status) => _AiEngineForm(status: status),
           ),
         ],
       ),
@@ -137,7 +130,7 @@ class _AiEngineFormState extends ConsumerState<_AiEngineForm> {
               ? () => _clearKey(anthropic: true)
               : null,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s16),
         _ProviderCard(
           label: 'Codex',
           connected: status.hasOpenaiKey,
@@ -149,10 +142,11 @@ class _AiEngineFormState extends ConsumerState<_AiEngineForm> {
               ? () => _clearKey(anthropic: false)
               : null,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.s24),
         StitchPrimaryButton(
           label: _saving ? 'Saving…' : 'Save',
-          onPressed: _saving ? null : _save,
+          loading: _saving,
+          onPressed: _save,
         ),
       ],
     );
@@ -179,65 +173,59 @@ class _ProviderCard extends StatelessWidget {
   final VoidCallback? onClearKey;
 
   @override
-  Widget build(BuildContext context) => StitchCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final statusColor = connected ? colors.accentSuccess : colors.textMuted;
+    return StitchCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(label, style: context.text.titleLarge)),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8,
+                  vertical: AppSpacing.s4,
                 ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color:
-                    (connected
-                            ? context.colors.accentSuccess
-                            : context.colors.textMuted)
-                        .withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                connected ? 'KEY SET' : 'USING DESKTOP LOGIN',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: connected
-                      ? context.colors.accentSuccess
-                      : context.colors.textMuted,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: keyController,
-          obscureText: true,
-          decoration: InputDecoration(
-            labelText: keyHint,
-            suffixIcon: onClearKey == null
-                ? null
-                : IconButton(
-                    tooltip: 'Clear stored key',
-                    icon: const Icon(Icons.close),
-                    onPressed: onClearKey,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(
+                    alpha: colors.isDark ? .18 : .12,
                   ),
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                ),
+                child: Text(
+                  connected ? 'KEY SET' : 'USING DESKTOP LOGIN',
+                  style: context.text.labelSmall?.copyWith(color: statusColor),
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: modelController,
-          decoration: InputDecoration(labelText: modelHint),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: AppSpacing.s12),
+          TextField(
+            controller: keyController,
+            obscureText: true,
+            autocorrect: false,
+            enableSuggestions: false,
+            decoration: InputDecoration(
+              labelText: keyHint,
+              suffixIcon: onClearKey == null
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear stored key',
+                      icon: const Icon(Icons.close),
+                      onPressed: onClearKey,
+                    ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          TextField(
+            controller: modelController,
+            autocorrect: false,
+            decoration: InputDecoration(labelText: modelHint),
+          ),
+        ],
+      ),
+    );
+  }
 }

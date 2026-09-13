@@ -52,4 +52,30 @@ class NetworkRepoRepository implements RepoRepository {
     _selectedContext = context;
     return context;
   }
+
+  @override
+  Future<SyncedRepository> connectGithubRepository({
+    required String url,
+    String? branch,
+    String? token,
+  }) async {
+    final json = await _apiClient.postJson(
+      '/repos/github/connect',
+      body: {
+        'url': url,
+        if (branch != null && branch.isNotEmpty) 'branch': branch,
+        if (token != null && token.isNotEmpty) 'token': token,
+      },
+    );
+    return SyncedRepositoryOutDto.fromJson(json).toDomain();
+  }
+
+  @override
+  Future<bool> saveGithubToken(String? token) async {
+    final json = await _apiClient.putJson(
+      '/repos/github/credentials',
+      body: token == null || token.isEmpty ? {'clear': true} : {'token': token},
+    );
+    return json['has_github_token'] as bool? ?? false;
+  }
 }

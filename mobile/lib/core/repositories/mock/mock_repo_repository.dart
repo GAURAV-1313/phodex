@@ -33,4 +33,22 @@ class MockRepoRepository implements RepoRepository {
     await Future<void>.delayed(const Duration(milliseconds: 140));
     return _store.selectRepository(repoId: repoId, name: name);
   }
+
+  @override
+  Future<SyncedRepository> connectGithubRepository({
+    required String url,
+    String? branch,
+    String? token,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    if (token != null && token.isNotEmpty) _store.setGithubToken(true);
+    return _store.addGithubRepository(url: url, branch: branch);
+  }
+
+  @override
+  Future<bool> saveGithubToken(String? token) async {
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    _store.setGithubToken(token != null && token.isNotEmpty);
+    return _store.hasGithubToken;
+  }
 }

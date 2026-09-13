@@ -1,7 +1,7 @@
 class UserProfile {
   const UserProfile({
     required this.id,
-    required this.googleSub,
+    this.googleSub,
     required this.email,
     required this.name,
     required this.createdAt,
@@ -10,7 +10,7 @@ class UserProfile {
   });
 
   final String id;
-  final String googleSub;
+  final String? googleSub;
   final String email;
   final String name;
   final String? avatarUrl;

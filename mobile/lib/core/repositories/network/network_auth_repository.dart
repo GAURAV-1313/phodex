@@ -13,4 +13,10 @@ class NetworkAuthRepository implements AuthRepository {
     final json = await _apiClient.getJson('/auth/me');
     return UserOutDto.fromJson(json).toDomain();
   }
+
+  @override
+  Future<UserProfile> signInAsDemo() async {
+    final json = await _apiClient.loginAsDemo();
+    return UserOutDto.fromJson(json['user'] as Map<String, dynamic>).toDomain();
+  }
 }

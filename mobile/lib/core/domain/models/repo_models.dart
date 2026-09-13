@@ -1,15 +1,18 @@
-enum ProjectContextSourceType { localSynced, manual }
+enum ProjectContextSourceType { localSynced, manual, github }
 
 extension ProjectContextSourceTypeX on ProjectContextSourceType {
   String get value => switch (this) {
     ProjectContextSourceType.localSynced => 'local_synced',
     ProjectContextSourceType.manual => 'manual',
+    ProjectContextSourceType.github => 'github',
   };
 
   static ProjectContextSourceType fromValue(String value) {
-    return value == 'manual'
-        ? ProjectContextSourceType.manual
-        : ProjectContextSourceType.localSynced;
+    return switch (value) {
+      'manual' => ProjectContextSourceType.manual,
+      'github' => ProjectContextSourceType.github,
+      _ => ProjectContextSourceType.localSynced,
+    };
   }
 }
 
@@ -47,6 +50,13 @@ class SyncedRepository {
   final Map<String, dynamic> metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// A repository cloned by the cloud runtime from GitHub (as opposed to
+  /// one found on a paired desktop by the device agent).
+  bool get isCloud => metadata['source'] == 'github';
+
+  /// The GitHub URL for cloud repositories, null for desktop ones.
+  String? get remoteUrl => metadata['url'] as String?;
 }
 
 class ProjectContext {
@@ -73,4 +83,6 @@ class ProjectContext {
   final Map<String, dynamic> metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  bool get isCloud => sourceType == ProjectContextSourceType.github;
 }
