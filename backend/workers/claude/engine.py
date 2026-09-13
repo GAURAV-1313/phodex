@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
 from app.services.approval_service import ApprovalService
+from app.services.cloud_repo_service import CloudRepoService
 from app.services.event_service import EventService
 from app.services.task_service import TaskService
 from app.services.user_ai_settings_service import UserAiSettingsService
@@ -42,6 +43,7 @@ class ClaudeWorkerEngine(SubprocessWorkerOrchestrator):
         event_service: EventService,
         approval_service: ApprovalService,
         user_ai_settings_service: UserAiSettingsService,
+        cloud_repo_service: CloudRepoService | None = None,
     ) -> None:
         lock = asyncio.Lock()
         context_builder = ExecutionContextBuilder(
@@ -50,6 +52,9 @@ class ClaudeWorkerEngine(SubprocessWorkerOrchestrator):
             instructions=(
                 "Return concise operational logs. Do not include private chain-of-thought. "
                 "If you edit files, include file-change summaries."
+            ),
+            prepare_workdir=(
+                cloud_repo_service.prepare_for_task if cloud_repo_service is not None else None
             ),
         )
         process_runner = ProcessRunner(
