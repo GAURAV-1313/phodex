@@ -1,6 +1,6 @@
 # Phodex — AI-Powered Remote Development Platform
 
-A full-stack platform that connects a Flutter mobile app to AI coding workers (Claude, Codex) running on a developer's laptop — enabling remote, approval-gated AI-assisted git operations.
+A full-stack platform that connects a Flutter mobile app to AI coding workers (Claude, Codex, or Anthropic Managed Agents) running on a developer's laptop **or on Phodex Cloud** — enabling remote, approval-gated AI-assisted git operations with the laptop closed.
 
 **Tech Stack:** FastAPI · Python 3.11 · PostgreSQL + AsyncPG · Redis · Firebase Cloud Messaging · Flutter/Dart · Riverpod · Alembic
 
@@ -13,17 +13,28 @@ A full-stack platform that connects a Flutter mobile app to AI coding workers (C
 Phodex lets developers create AI coding tasks from their phone, have them executed by Claude or Codex on their laptop, review and approve git changes remotely, and watch real-time event streams — all through a polished mobile interface.
 
 ```
-Mobile App (Flutter)  →  FastAPI Backend  →  Worker (Claude/Codex)  →  Laptop Git Repo
-       ↑                      ↓                       ↑                      ↑
-   Push Notifications   Real-time Events      Subprocess Orchestrator    Human Approval
+Mobile App (Flutter)  →  FastAPI Backend  →  Worker (Claude/Codex/Managed)  →  Git Repo
+       ↑                      ↓                       ↑                          ↑
+   Push Notifications   Real-time Events      Subprocess / Session          Human Approval
+
+Runtime modes:
+  desktop  backend on your laptop, repos on disk, paired over Wi-Fi/Tailscale
+  cloud    backend on a server, GitHub repos cloned into a workspace, demo account,
+           "Phodex Cloud" device — nothing to keep open (backend/docs/cloud-runtime.md)
 ```
 
 ---
 
 ## Salient Features
 
+### ☁️ Two runtimes, one app
+- **Desktop runtime** — the original local-first design: the backend runs on the laptop, tasks operate on repositories already on disk, git reuses the machine's credentials
+- **Phodex Cloud** — `RUNTIME_MODE=cloud` runs the same backend on a server: `POST /repos/github/connect` clones any GitHub repository into a per-user workspace, the server registers itself as a synthetic "Phodex Cloud" device, pushes use an encrypted per-user GitHub token, and a public demo account (`POST /auth/demo`) lets anyone try it with zero setup
+- **Deployable** — Dockerfile with git + the Claude Code CLI, `fly.toml`, a CI deploy job, and a smoke test script (`backend/scripts/smoke_test_cloud_runtime.sh`)
+
 ### 🤖 Multi-Worker AI Orchestration
-- **Pluggable worker engines** — Claude Code CLI and OpenAI Codex runtime as interchangeable adapters implementing a shared `WorkerEngine` interface
+- **Pluggable worker engines** — Claude Code CLI, OpenAI Codex runtime, and Anthropic Managed Agents as interchangeable adapters implementing a shared `WorkerEngine` interface
+- **Managed Agents engine** — Anthropic hosts the loop and a per-session sandbox; the repo is mounted through Anthropic's git proxy (token never enters the sandbox), `bash` calls become phone approvals via `user.tool_confirmation`, cancel maps to `user.interrupt`
 - **Subprocess lifecycle management** — spawn, stdin/stdout wiring, outcome parsing, cleanup via `ManagedSubprocess`
 - **Generic orchestrator state machine** — shared dispatch/approval/cancel flow across all workers
 - **Typed output parsers** — extract assistant messages, tool use, final summaries, and error states from JSON-lines output
@@ -106,6 +117,8 @@ All models use `UUIDPrimaryKeyMixin` and `TimestampMixin` for consistent ID gene
 - **Structured logging** and application metrics endpoint
 
 ### 📱 Mobile App (Flutter)
+- **Guided onboarding** — splash gate with router redirects, runtime chooser (Phodex Cloud or paired desktop), QR pairing with camera-denied and manual fallbacks, Google or demo sign-in with specific error messages, first-repo and notifications steps, all persisted so the flow never replays
+- **One design system** — a single type ladder, a full Material `ColorScheme` built from the palette, themed components, and a shared kit (`StitchScaffold`, `StitchHeader`, `TaskStatusChip`, `ContextPill`, `ComposerBar`, `StatusBanner`, `StitchEmptyState`, `StitchAsyncView`, `TraceCard`); `mobile/tool/check_design_tokens.sh` fails CI on raw colors, literal font sizes, or literal radii in screens
 - **Riverpod state management** — `AsyncNotifierProvider` pattern throughout
 - **Repository abstraction** — `Network*Repository` + `Mock*Repository` pairs for testability
 - **6 feature modules:** Home, Sessions, Repos, Approvals, Account, AI Engine Settings
@@ -124,7 +137,7 @@ All models use `UUIDPrimaryKeyMixin` and `TimestampMixin` for consistent ID gene
 | Service modules | 16 |
 | API endpoints | 34 |
 | Database models | 14 |
-| Worker engines | 3 (Claude, Codex, Fake) |
+| Worker engines | 4 (Claude, Codex, Managed Agents, Fake) |
 | Test files | 15 |
 | Async patterns | AsyncPG, SSE streaming, EventBus, subprocess I/O |
 
@@ -154,8 +167,12 @@ backend/
 │   └── workers/
 │       ├── claude/     # Claude Code CLI adapter (engine + process runner + parser)
 │       ├── codex/      # Codex runtime adapter (engine + process runner + parser)
+│       ├── managed/    # Anthropic Managed Agents adapter (session runner)
 │       ├── common/     # Orchestrator, state machine, subprocess I/O, context builder
 │       └── fake_worker.py  # Test stub
+├── docs/cloud-runtime.md   # Phodex Cloud: deploy, demo account, Managed Agents
+├── fly.toml                # Fly.io deployment
+└── scripts/                # device agent, smoke tests, managed-agent setup
 ├── tests/              # 15 integration test files
 └── alembic/            # Database migrations
 

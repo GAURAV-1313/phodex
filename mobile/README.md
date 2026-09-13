@@ -84,3 +84,33 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## Onboarding and runtimes
+
+First launch walks through Welcome → **Runtime** → Sign in → First repo →
+Notifications → Home, and the router (`lib/app/router/app_router.dart`)
+redirects based on sign-in and onboarding state, so deep links never skip a
+step and a returning user goes straight to Home.
+
+The **Runtime** step is where the app decides where tasks run:
+
+- **Phodex Cloud** — a hosted backend (`RUNTIME_MODE=cloud`, see
+  `backend/docs/cloud-runtime.md`). The app probes `GET /runtime/public`,
+  stores the URL, and offers **Try the demo** when the server exposes a demo
+  account (`POST /auth/demo`). Override the default address at build time:
+
+  ```bash
+  flutter run --dart-define=PHODEX_CLOUD_URL=https://phodex-cloud.fly.dev
+  ```
+
+- **My desktop** — the original pairing flow (QR scan or manual address).
+
+Both can be changed later from Account → Runtime, which also stores the
+GitHub token used for pushes from cloud workspaces.
+
+## Design system
+
+Screens are built from `lib/shared/widgets/stitch_ui.dart` and the tokens in
+`lib/shared/theme/` (see `docs/mobile-codex-ui-spec.md`). `tool/check_design_tokens.sh`
+runs in CI and fails on raw colors, literal font sizes, literal radii, bare
+`TextStyle(` blocks, or `styleFrom(` overrides inside `lib/features`.

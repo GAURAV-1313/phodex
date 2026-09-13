@@ -1,0 +1,154 @@
+{
+  "pages": [
+    {
+      "id": "flow",
+      "name": "Onboarding flow"
+    },
+    {
+      "id": "screens",
+      "name": "Screens"
+    },
+    {
+      "id": "system",
+      "name": "Design system"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Welcome.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow"
+    },
+    {
+      "file": "Runtime.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow"
+    },
+    {
+      "file": "ConnectDesktop.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow"
+    },
+    {
+      "file": "SignIn.dc.html",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow"
+    },
+    {
+      "file": "FirstRepo.dc.html",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow"
+    },
+    {
+      "file": "Notifications.dc.html",
+      "x": 2450,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 2940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "flow",
+      "title": "Home (first run)"
+    },
+    {
+      "file": "Session.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "screens"
+    },
+    {
+      "file": "Approvals.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "screens"
+    },
+    {
+      "file": "Repos.dc.html",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "screens"
+    },
+    {
+      "file": "RepoDetail.dc.html",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "screens"
+    },
+    {
+      "file": "RepoNotFound.dc.html",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "screens"
+    },
+    {
+      "file": "DesignSystem.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1240,
+      "h": 3400,
+      "page": "system",
+      "expand": "fill"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "flow-note",
+      "x": 0,
+      "y": -160,
+      "w": 520,
+      "page": "flow",
+      "text": "Onboarding, left to right: Welcome \u2192 Runtime \u2192 Connect desktop (desktop path) \u2192 Sign in \u2192 First repo \u2192 Notifications \u2192 Home first run.\nEvery artboard has a Theme tweak (light/dark). Copy is literal; edit it in place."
+    },
+    {
+      "id": "screens-note",
+      "x": 0,
+      "y": -140,
+      "w": 520,
+      "page": "screens",
+      "text": "The three screens the audit flagged, rebuilt on the shell: Session (pinned composer with stop, trace cards, approval card), Approvals (summary + terminal payloads), Repos and Repo detail (overview card, cloud badge, not-found state)."
+    },
+    {
+      "id": "system-note",
+      "x": 1300,
+      "y": 0,
+      "w": 320,
+      "page": "system",
+      "text": "Tokens are lifted from app_colors.dart, app_typography.dart, app_spacing.dart and app_radii.dart. Components mirror stitch_ui.dart."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "flow"
+  }
+}
