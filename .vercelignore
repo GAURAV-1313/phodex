@@ -1,4 +1,23 @@
+# Only landing.html, vercel.json and public/ are needed by the site.
+backend/
+mobile/
+docs/
 graphify-out/
 node_modules/
-mobile/
+.github/
+.claude/
+.opencode/
+.vercel/
+*.md
+*.py
+*.csv
+*.json
+!vercel.json
 *.log
+*.db
+.env*
+**/.env*
+.DS_Store
+*.jpeg
+*.jpg
+*.png

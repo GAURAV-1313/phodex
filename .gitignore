@@ -5,3 +5,10 @@
 *.png
 .claude/
 .opencode/
+.env*
+
+# Generated / local caches — never belong in the repo
+graphify-out/
+*.db
+node_modules/
+mobile/build/
