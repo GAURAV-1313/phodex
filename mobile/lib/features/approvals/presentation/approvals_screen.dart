@@ -3,262 +3,126 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/domain/models/models.dart';
 import 'package:mobile/features/approvals/application/approvals_controller.dart';
+import 'package:mobile/features/home/application/home_controller.dart';
 import 'package:mobile/shared/theme/theme.dart';
 import 'package:mobile/shared/widgets/phodex_mascot.dart';
 import 'package:mobile/shared/widgets/stagger_in.dart';
+import 'package:mobile/shared/widgets/stitch_nav.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
 
 class ApprovalsScreen extends ConsumerWidget {
   const ApprovalsScreen({super.key});
 
+  Future<void> _resolve(
+    BuildContext context,
+    WidgetRef ref, {
+    required String verb,
+    required Future<void> Function() action,
+  }) async {
+    try {
+      await action();
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Couldn't $verb this request"),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _resolve(context, ref, verb: verb, action: action),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(approvalsProvider);
-    return Scaffold(
-      backgroundColor: context.colors.bgPrimary,
-      body: SafeArea(
-        child: value.when(
-          data: (items) => ListView(
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 44),
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 70),
-              if (items.isEmpty)
-                const _NoApprovals()
-              else ...[
-                Text(
-                  'Pending Approval',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.display(
-                    fontSize: AppTypeScale.displayLarge,
-                    letterSpacing: -1,
-                    color: context.colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Your AI engineer needs permission to continue an important action.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: AppTypeScale.subhead,
-                    height: 1.45,
-                    color: context.colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 58),
-                for (final (i, item) in items.indexed)
-                  StaggerIn(
-                    index: i,
-                    child: _ApprovalReview(
-                      approval: item,
-                      onApprove: () => ref
-                          .read(approvalsProvider.notifier)
-                          .approve(approvalId: item.id),
-                      onReject: () async {
-                        final reason = await showRejectReasonDialog(context);
-                        if (reason == null) return;
-                        await ref
-                            .read(approvalsProvider.notifier)
-                            .reject(
-                              approvalId: item.id,
-                              note: reason.isEmpty ? null : reason,
-                            );
-                      },
-                      onTask: () => context.go('/session/${item.taskId}'),
-                    ),
-                  ),
-              ],
-            ],
-          ),
-          loading: () => const PhodexLoading(),
-          error: (error, _) => StitchErrorState(
-            title: "Couldn't load approvals",
-            onRetry: () => ref.invalidate(approvalsProvider),
-          ),
-        ),
-      ),
-    );
-  }
-}
+    final tasks =
+        ref.watch(homeTasksProvider).asData?.value ?? const <TaskSummary>[];
+    final notifier = ref.read(approvalsProvider.notifier);
 
-class _NoApprovals extends StatelessWidget {
-  const _NoApprovals();
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 140),
-    child: Column(
-      children: [
-        const PhodexMascot(size: 84, mood: MascotMood.success),
-        const SizedBox(height: 24),
-        Text(
-          'Nothing needs your approval',
-          style: AppTypography.display(
-            fontSize: AppTypeScale.title,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Your agent will pause here whenever it needs a decision.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: context.colors.textSecondary,
-            fontSize: AppTypeScale.body,
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    String? taskTitleFor(String taskId) {
+      for (final task in tasks) {
+        if (task.id == taskId) return task.title ?? task.prompt;
+      }
+      return null;
+    }
 
-class _ApprovalReview extends StatelessWidget {
-  const _ApprovalReview({
-    required this.approval,
-    required this.onApprove,
-    required this.onReject,
-    required this.onTask,
-  });
-  final ApprovalRequest approval;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
-  final VoidCallback onTask;
-
-  @override
-  Widget build(BuildContext context) {
-    final command = approval.payload['command']?.toString() ?? approval.title;
-    final risk = approval.payload['risk_level']?.toString() ?? 'medium';
-    final kindLabel = approval.kind
-        .split('_')
-        .where((w) => w.isNotEmpty)
-        .map((w) => w[0].toUpperCase() + w.substring(1))
-        .join(' ');
-    return StitchCard(
+    return StitchScaffold(
+      showDock: false,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7F2FF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.terminal_rounded,
-                  color: context.colors.accentPrimary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  kindLabel.isEmpty ? 'ACTION' : kindLabel.toUpperCase(),
-                  style: TextStyle(
-                    letterSpacing: 1.3,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.textMuted,
-                  ),
-                ),
-              ),
-              _RiskBadge(risk: risk),
-            ],
-          ),
-          const SizedBox(height: 22),
-          const Divider(),
-          const SizedBox(height: 22),
-          Text(
-            'TASK DESCRIPTION',
-            style: TextStyle(
-              letterSpacing: 1.3,
-              fontWeight: FontWeight.w700,
-              color: context.colors.textMuted,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              AppSpacing.screenTop,
+              AppSpacing.screen,
+              0,
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            approval.title,
-            style: const TextStyle(
-              fontSize: 29,
-              height: 1.12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'REQUESTED ACTION',
-            style: TextStyle(
-              letterSpacing: 1.3,
-              fontWeight: FontWeight.w700,
-              color: context.colors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.colors.bgInput,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Text(
-              '\$ $command',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.code(
-                fontSize: 15,
-                color: context.colors.accentPrimary,
+            child: StitchHeader(
+              title: 'Approvals',
+              onBack: () => stitchPopOrGo(context, '/home'),
+              trailing: IconButton(
+                tooltip: 'Refresh',
+                onPressed: notifier.refresh,
+                icon: const Icon(Icons.refresh_rounded),
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            approval.description,
-            style: TextStyle(
-              fontSize: 18,
-              height: 1.5,
-              color: context.colors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 22),
-          Center(
-            child: TextButton(
-              onPressed: onTask,
-              child: const Text('View full execution plan'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 56,
-                  child: OutlinedButton(
-                    onPressed: onReject,
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: context.colors.borderSubtle),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+          Expanded(
+            child: StitchAsyncView<List<ApprovalRequest>>(
+              value: value,
+              errorTitle: "Couldn't load approvals",
+              onRetry: notifier.refresh,
+              isEmpty: (items) => items.isEmpty,
+              empty: const StitchEmptyState(
+                mood: MascotMood.resting,
+                title: 'Nothing waiting on you',
+                message: 'Approval requests from your agent show up here.',
+              ),
+              builder: (context, items) => ListView(
+                padding: stitchScreenPaddingNoDock,
+                children: [
+                  _SummaryCard(count: items.length),
+                  const SizedBox(height: AppSpacing.s24),
+                  for (final (i, item) in items.indexed)
+                    StaggerIn(
+                      index: i,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.s16),
+                        child: _ApprovalCard(
+                          approval: item,
+                          taskTitle: taskTitleFor(item.taskId),
+                          onApprove: () => _resolve(
+                            context,
+                            ref,
+                            verb: 'approve',
+                            action: () => notifier.approve(approvalId: item.id),
+                          ),
+                          onReject: () async {
+                            final reason = await showRejectReasonDialog(
+                              context,
+                            );
+                            if (reason == null || !context.mounted) return;
+                            await _resolve(
+                              context,
+                              ref,
+                              verb: 'reject',
+                              action: () => notifier.reject(
+                                approvalId: item.id,
+                                note: reason.isEmpty ? null : reason,
+                              ),
+                            );
+                          },
+                          onViewTask: () =>
+                              context.push('/session/${item.taskId}'),
+                        ),
                       ),
                     ),
-                    child: const Text('Reject'),
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: StitchPrimaryButton(
-                  label: 'Approve',
-                  onPressed: onApprove,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -266,30 +130,184 @@ class _ApprovalReview extends StatelessWidget {
   }
 }
 
-class _RiskBadge extends StatelessWidget {
-  const _RiskBadge({required this.risk});
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => StitchCard(
+    child: Row(
+      children: [
+        const PhodexMascot(size: 48, mood: MascotMood.curious),
+        const SizedBox(width: AppSpacing.s16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$count pending',
+                style: context.text.titleLarge?.copyWith(
+                  color: context.colors.accentWarning,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s4),
+              Text(
+                'Approvals are gated on your phone — nothing runs until you say so.',
+                style: context.text.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ApprovalCard extends StatelessWidget {
+  const _ApprovalCard({
+    required this.approval,
+    required this.taskTitle,
+    required this.onApprove,
+    required this.onReject,
+    required this.onViewTask,
+  });
+
+  final ApprovalRequest approval;
+  final String? taskTitle;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  final VoidCallback onViewTask;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final command = approval.payload['command']?.toString() ?? approval.title;
+    final workdir = approval.payload['workdir']?.toString();
+    final risk = approval.payload['risk_level']?.toString() ?? 'medium';
+    final preview = workdir == null
+        ? '\$ $command'
+        : '\$ $command\n# in $workdir';
+    return StitchCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.s12),
+                decoration: BoxDecoration(
+                  color: colors.accentPrimarySoft,
+                  borderRadius: BorderRadius.circular(AppRadii.chip),
+                ),
+                child: Icon(
+                  Icons.terminal_rounded,
+                  color: colors.accentPrimary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(approval.title, style: context.text.titleMedium),
+                    if (taskTitle case final title?) ...[
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
+              const TaskStatusChip(status: 'waiting_approval'),
+              _RiskChip(risk: risk),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          Text(approval.description, style: context.text.bodyMedium),
+          const SizedBox(height: AppSpacing.s12),
+          StitchTerminalBlock(
+            text: preview,
+            maxLines: 3,
+            label: 'Requested action',
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onReject,
+                  child: Semantics(
+                    label: 'Reject: ${approval.title}',
+                    excludeSemantics: true,
+                    child: const Text('Reject'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: onApprove,
+                  child: Semantics(
+                    label: 'Approve: ${approval.title}',
+                    excludeSemantics: true,
+                    child: const Text('Approve'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          Center(
+            child: TextButton.icon(
+              onPressed: onViewTask,
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('View full execution plan'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RiskChip extends StatelessWidget {
+  const _RiskChip({required this.risk});
   final String risk;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final color = switch (risk.toLowerCase()) {
-      'low' => context.colors.accentSuccess,
-      'high' || 'critical' => context.colors.accentError,
-      _ => context.colors.accentWarning,
+      'low' => colors.accentSuccess,
+      'high' || 'critical' => colors.accentError,
+      _ => colors.accentWarning,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '${risk.toUpperCase()} RISK',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: .4,
-          color: color,
+    return Semantics(
+      label: '$risk risk',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s12,
+          vertical: AppSpacing.s8 - AppSpacing.s2,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: colors.isDark ? .18 : .12),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+        ),
+        child: Text(
+          '${risk.toUpperCase()} RISK',
+          style: context.text.labelSmall?.copyWith(color: color),
         ),
       ),
     );

@@ -1,12 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile/core/domain/models/models.dart';
+import 'package:mobile/features/approvals/application/approvals_controller.dart';
 import 'package:mobile/features/home/application/home_controller.dart';
 import 'package:mobile/shared/theme/theme.dart';
 import 'package:mobile/shared/widgets/phodex_mascot.dart';
 import 'package:mobile/shared/widgets/stagger_in.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
+
+enum _Filter {
+  all('All'),
+  running('Running'),
+  completed('Completed');
+
+  const _Filter(this.label);
+  final String label;
+
+  bool matches(TaskSummary task) => switch (this) {
+    _Filter.all => true,
+    _Filter.running => !task.status.isTerminal,
+    _Filter.completed => task.status == TaskStatus.completed,
+  };
+}
 
 class RecentsScreen extends ConsumerStatefulWidget {
   const RecentsScreen({super.key});
@@ -15,7 +32,7 @@ class RecentsScreen extends ConsumerStatefulWidget {
 }
 
 class _RecentsScreenState extends ConsumerState<RecentsScreen> {
-  String _filter = 'All';
+  _Filter _filter = _Filter.all;
   final _search = TextEditingController();
   String _query = '';
 
@@ -33,166 +50,131 @@ class _RecentsScreenState extends ConsumerState<RecentsScreen> {
     super.dispose();
   }
 
+  void _clearFilters() {
+    _search.clear();
+    setState(() {
+      _query = '';
+      _filter = _Filter.all;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final value = ref.watch(homeTasksProvider);
+    final hasPendingApprovals =
+        (ref.watch(approvalsProvider).asData?.value ?? const []).isNotEmpty;
     return StitchScaffold(
       active: StitchTab.activity,
       child: RefreshIndicator(
         onRefresh: () => ref.read(homeTasksProvider.notifier).refresh(),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, stitchDockClearance),
+          padding: stitchScreenPadding,
           children: [
-            StitchHeader(onBell: () => context.push('/approvals')),
-            const SizedBox(height: 44),
-            Text(
-              'Activity',
-              style: AppTypography.display(
-                fontSize: AppTypeScale.displayLarge,
-                letterSpacing: -1,
-                color: context.colors.textPrimary,
-              ),
+            StitchHeader(
+              bellBadge: hasPendingApprovals,
+              onBell: () => context.push('/approvals'),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: AppSpacing.s32),
+            Text('Activity', style: context.text.displayLarge),
+            const SizedBox(height: AppSpacing.s24),
             TextField(
               controller: _search,
               onChanged: (v) => setState(() => _query = v.trim()),
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Search tasks…',
                 prefixIcon: const Icon(Icons.search_rounded),
-                fillColor: context.colors.bgInput,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          _search.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: ['All', 'Running', 'Completed']
-                  .map(
-                    (filter) => Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(filter),
-                          selected: _filter == filter,
-                          onSelected: (_) => setState(() => _filter = filter),
-                          selectedColor: context.colors.bgCard,
-                          backgroundColor: context.colors.bgInput,
-                          shape: const StadiumBorder(),
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+            const SizedBox(height: AppSpacing.s16),
+            Wrap(
+              spacing: AppSpacing.s8,
+              runSpacing: AppSpacing.s8,
+              children: [
+                for (final filter in _Filter.values)
+                  ChoiceChip(
+                    label: Text(filter.label),
+                    selected: _filter == filter,
+                    onSelected: (_) => setState(() => _filter = filter),
+                  ),
+              ],
             ),
-            const SizedBox(height: 32),
-            value.when(
-              data: (tasks) {
+            const SizedBox(height: AppSpacing.s24),
+            StitchAsyncView<List<TaskSummary>>(
+              value: value,
+              errorTitle: "Couldn't load your tasks",
+              onRetry: () => ref.read(homeTasksProvider.notifier).refresh(),
+              isEmpty: (tasks) => tasks.isEmpty,
+              empty: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.s48),
+                child: StitchEmptyState(
+                  mood: MascotMood.curious,
+                  title: 'No tasks yet',
+                  message:
+                      'Describe what you need built and Phodex will get to work.',
+                  actionLabel: 'Create your first coding task',
+                  onAction: () => context.go('/home'),
+                ),
+              ),
+              builder: (context, tasks) {
+                final query = _query.toLowerCase();
                 final visible = tasks
                     .where(
                       (task) =>
-                          (_filter == 'All' ||
-                              (_filter == 'Running'
-                                  ? !task.status.isTerminal
-                                  : task.status == TaskStatus.completed)) &&
-                          (_query.isEmpty ||
+                          _filter.matches(task) &&
+                          (query.isEmpty ||
                               (task.title ?? task.prompt)
                                   .toLowerCase()
-                                  .contains(_query.toLowerCase())),
+                                  .contains(query) ||
+                              task.prompt.toLowerCase().contains(query)),
                     )
                     .toList();
-                if (tasks.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 80),
-                    child: Column(
-                      children: [
-                        const PhodexMascot(size: 84, mood: MascotMood.idle),
-                        const SizedBox(height: 24),
-                        Text(
-                          'No tasks yet',
-                          style: AppTypography.display(
-                            fontSize: AppTypeScale.title,
-                            color: context.colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Describe what you need built and your agent will get to work.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: AppTypeScale.body,
-                            color: context.colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
                 if (visible.isEmpty) {
                   return Padding(
-                    padding: const EdgeInsets.only(top: 80),
-                    child: Column(
-                      children: [
-                        const PhodexMascot(size: 84, mood: MascotMood.idle),
-                        const SizedBox(height: 24),
-                        Text(
-                          'No matching tasks',
-                          style: AppTypography.display(
-                            fontSize: AppTypeScale.title,
-                            color: context.colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          _query.isNotEmpty
-                              ? 'Nothing named "$_query". Try a different search.'
-                              : 'No tasks match this filter yet.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: AppTypeScale.body,
-                            color: context.colors.textSecondary,
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(top: AppSpacing.s48),
+                    child: StitchEmptyState(
+                      mood: MascotMood.resting,
+                      title: 'No matching tasks',
+                      message: _query.isNotEmpty
+                          ? 'Nothing named "$_query". Try a different search.'
+                          : 'No tasks match this filter yet.',
+                      actionLabel: 'Clear filters',
+                      onAction: _clearFilters,
                     ),
                   );
                 }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'TODAY',
-                      style: TextStyle(
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w700,
-                        color: context.colors.textMuted,
-                      ),
+                    StitchSectionLabel(
+                      '${visible.length} ${visible.length == 1 ? 'task' : 'tasks'}',
                     ),
-                    const SizedBox(height: 18),
                     for (final (i, task) in visible.indexed)
                       StaggerIn(
                         index: i,
-                        child: _ActivityCard(
-                          task: task,
-                          onTap: () => context.go('/session/${task.id}'),
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppSpacing.s12,
+                          ),
+                          child: _ActivityCard(
+                            task: task,
+                            onTap: () => context.push('/session/${task.id}'),
+                          ),
                         ),
                       ),
                   ],
                 );
               },
-              loading: () => const Padding(
-                padding: EdgeInsets.only(top: 120),
-                child: PhodexLoading(),
-              ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.only(top: 80),
-                child: StitchErrorState(
-                  title: "Couldn't load your tasks",
-                  onRetry: () => ref.read(homeTasksProvider.notifier).refresh(),
-                ),
-              ),
             ),
           ],
         ),
@@ -205,94 +187,54 @@ class _ActivityCard extends StatelessWidget {
   const _ActivityCard({required this.task, required this.onTap});
   final TaskSummary task;
   final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     final live = !task.status.isTerminal;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Row(
+    final when = DateFormat.MMMd().add_Hm().format(task.updatedAt.toLocal());
+    return StitchCard(
+      onTap: onTap,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              PhodexMascot(size: 52, mood: moodForTaskStatus(task.status)),
-              Container(
-                width: 2,
-                height: 78,
-                color: context.colors.borderSubtle,
+              Expanded(
+                child: Text(
+                  task.title ?? task.prompt,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.titleMedium,
+                ),
               ),
+              const SizedBox(width: AppSpacing.s8),
+              TaskStatusChip(status: task.status.value, compact: true),
             ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: StitchCard(
-              onTap: onTap,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          task.title ?? task.prompt,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      _StatusPill(status: task.status),
-                    ],
-                  ),
-                  Text(
-                    live
-                        ? (task.currentPhase ?? 'Agent is working')
-                        : (task.finalSummary ??
-                              task.errorMessage ??
-                              task.status.value),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.45,
-                      color: context.colors.textSecondary,
-                    ),
-                  ),
-                  if (live) ...[
-                    const SizedBox(height: 16),
-                    const LinearProgressIndicator(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          const SizedBox(height: AppSpacing.s8),
+          Text(
+            live
+                ? (task.currentPhase?.replaceAll('_', ' ') ??
+                      'Agent is working')
+                : (task.finalSummary ??
+                      task.errorMessage ??
+                      taskStatusLabel(task.status.value)),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodyMedium,
           ),
+          const SizedBox(height: AppSpacing.s8),
+          Text(when, style: context.text.labelMedium),
+          if (live) ...[
+            const SizedBox(height: AppSpacing.s12),
+            LinearProgressIndicator(
+              value: task.status == TaskStatus.waitingApproval ? 1 : null,
+              borderRadius: BorderRadius.circular(AppRadii.chip),
+            ),
+          ],
         ],
       ),
     );
   }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.status});
-  final TaskStatus status;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: taskStatusColor(context.colors, status.value),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Text(
-      status.value.replaceAll('_', ' ').toUpperCase(),
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
 }

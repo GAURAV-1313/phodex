@@ -1,83 +1,256 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/domain/models/models.dart';
 import 'package:mobile/core/providers/repository_providers.dart';
+import 'package:mobile/features/repos/application/repos_controller.dart';
 import 'package:mobile/features/session/application/session_controller.dart';
 import 'package:mobile/features/session/application/session_state.dart';
 import 'package:mobile/shared/theme/theme.dart';
 import 'package:mobile/shared/widgets/issue_card.dart';
 import 'package:mobile/shared/widgets/phodex_mascot.dart';
 import 'package:mobile/shared/widgets/stagger_in.dart';
+import 'package:mobile/shared/widgets/stitch_nav.dart';
 import 'package:mobile/shared/widgets/stitch_ui.dart';
+import 'package:mobile/shared/widgets/trace_card.dart';
+
+/// Bottom inset for the scrollable content so the last card clears the
+/// pinned composer.
+const double _composerClearance = stitchDockClearance + AppSpacing.s24;
 
 class SessionScreen extends ConsumerWidget {
   const SessionScreen({super.key, required this.taskId});
   final String taskId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(sessionProvider(taskId));
-    return Scaffold(
-      backgroundColor: context.colors.bgPrimary,
-      body: SafeArea(
-        child: value.when(
-          data: (session) => _ExecutionView(
-            session: session,
-            onApprove: (id) =>
-                ref.read(sessionProvider(taskId).notifier).approve(id),
-            onReject: (id, {note}) => ref
-                .read(sessionProvider(taskId).notifier)
-                .reject(id, note: note),
-            onCancel: () =>
-                ref.read(sessionProvider(taskId).notifier).cancelTask(),
-            onReply: (message) =>
-                ref.read(sessionProvider(taskId).notifier).sendReply(message),
-            onPrepareCommit: () => ref
-                .read(gitOpsRepositoryProvider)
-                .prepareCommit(taskId: taskId),
-            onConfirmCommit: (gitOperationId, commitMessage) => ref
-                .read(gitOpsRepositoryProvider)
-                .confirmCommit(
-                  taskId: taskId,
-                  gitOperationId: gitOperationId,
-                  commitMessage: commitMessage,
-                ),
-            onDiscardCommit: (gitOperationId) => ref
-                .read(gitOpsRepositoryProvider)
-                .discardCommit(taskId: taskId, gitOperationId: gitOperationId),
-            onContinueWithNewTask: (prompt) => ref
-                .read(sessionProvider(taskId).notifier)
-                .continueWithNewTask(prompt),
+    final session = value.asData?.value;
+    final selected = ref.watch(selectedProjectContextProvider).asData?.value;
+    final repos =
+        ref.watch(repositoriesProvider).asData?.value ??
+        const <SyncedRepository>[];
+
+    // Only show a context pill when we can genuinely attribute the task to
+    // the currently selected context — never a guessed one.
+    ({String name, String? branch})? projectContext;
+    if (session != null &&
+        selected != null &&
+        session.task.projectContextId != null &&
+        selected.id == session.task.projectContextId) {
+      projectContext = describeProjectContext(selected, repos);
+    }
+
+    final notifier = ref.read(sessionProvider(taskId).notifier);
+    final title = session?.task.title ?? session?.task.prompt ?? 'Task';
+    final showComposer = session != null && !session.task.status.isTerminal;
+
+    return StitchScaffold(
+      showDock: false,
+      bottom: showComposer
+          ? _SessionComposer(
+              session: session,
+              onSend: (message) => _sendReply(context, notifier, message),
+              onStop: () => _confirmStop(context, notifier),
+            )
+          : null,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              AppSpacing.screenTop,
+              AppSpacing.screen,
+              0,
+            ),
+            child: StitchHeader(
+              title: title,
+              onBack: () => stitchPopOrGo(context, '/activity'),
+              trailing: session == null
+                  ? null
+                  : IconButton(
+                      tooltip: 'Execution logs',
+                      onPressed: () => _showLogs(context, session, notifier),
+                      icon: const Icon(Icons.terminal_rounded),
+                    ),
+            ),
           ),
-          loading: () => const PhodexLoading(),
-          error: (error, _) => StitchErrorState(
-            title: "Couldn't load this task",
-            onRetry: () => ref.invalidate(sessionProvider(taskId)),
+          Expanded(
+            // Not StitchAsyncView: its loading branch is the mascot spinner,
+            // and this screen wants layout-shaped skeleton blocks instead.
+            child: session != null
+                ? _ExecutionView(
+                    session: session,
+                    projectContext: projectContext,
+                    onApprove: notifier.approve,
+                    onReject: (id, {note}) => notifier.reject(id, note: note),
+                    onShowLogs: () => _showLogs(context, session, notifier),
+                    onPrepareCommit: () => ref
+                        .read(gitOpsRepositoryProvider)
+                        .prepareCommit(taskId: taskId),
+                    onConfirmCommit: (gitOperationId, commitMessage) => ref
+                        .read(gitOpsRepositoryProvider)
+                        .confirmCommit(
+                          taskId: taskId,
+                          gitOperationId: gitOperationId,
+                          commitMessage: commitMessage,
+                        ),
+                    onDiscardCommit: (gitOperationId) => ref
+                        .read(gitOpsRepositoryProvider)
+                        .discardCommit(
+                          taskId: taskId,
+                          gitOperationId: gitOperationId,
+                        ),
+                    onContinueWithNewTask: notifier.continueWithNewTask,
+                  )
+                : value.hasError
+                ? StitchErrorState(
+                    title: "Couldn't load this task",
+                    onRetry: () => ref.invalidate(sessionProvider(taskId)),
+                  )
+                : const _SessionSkeleton(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendReply(
+    BuildContext context,
+    SessionController notifier,
+    String message,
+  ) async {
+    try {
+      await notifier.sendReply(message);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Couldn't send your reply"),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _sendReply(context, notifier, message),
           ),
         ),
+      );
+    }
+  }
+
+  Future<void> _confirmStop(
+    BuildContext context,
+    SessionController notifier,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Stop this task?'),
+        content: const Text(
+          'The agent will stop where it is. Anything it already changed stays '
+          'in your working tree.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep running'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Stop task'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await notifier.cancelTask();
+  }
+
+  void _showLogs(
+    BuildContext context,
+    SessionUiState session,
+    SessionController notifier,
+  ) {
+    showStitchSheet<void>(
+      context,
+      title: 'Execution logs',
+      child: _LogsSheet(
+        events: session.events,
+        onForceTerminate: session.task.status.isTerminal
+            ? null
+            : notifier.cancelTask,
       ),
     );
   }
 }
 
+/// The pinned reply bar. Owns its text controller so typing survives the
+/// stream of session rebuilds.
+class _SessionComposer extends StatefulWidget {
+  const _SessionComposer({
+    required this.session,
+    required this.onSend,
+    required this.onStop,
+  });
+
+  final SessionUiState session;
+  final ValueChanged<String> onSend;
+  final VoidCallback onStop;
+
+  @override
+  State<_SessionComposer> createState() => _SessionComposerState();
+}
+
+class _SessionComposerState extends State<_SessionComposer> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    final message = _controller.text.trim();
+    if (message.isEmpty) return;
+    widget.onSend(message);
+    _controller.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.s16,
+      AppSpacing.s8,
+      AppSpacing.s16,
+      AppSpacing.s12,
+    ),
+    child: ComposerBar(
+      controller: _controller,
+      hint: 'Reply to this task…',
+      onSend: _send,
+      sending: widget.session.isSendingReply,
+      running: widget.session.isExecuting,
+      onStop: widget.onStop,
+    ),
+  );
+}
+
 class _ExecutionView extends StatefulWidget {
   const _ExecutionView({
     required this.session,
+    required this.projectContext,
     required this.onApprove,
     required this.onReject,
-    required this.onCancel,
-    required this.onReply,
+    required this.onShowLogs,
     required this.onPrepareCommit,
     required this.onConfirmCommit,
     required this.onDiscardCommit,
     required this.onContinueWithNewTask,
   });
+
   final SessionUiState session;
-  final ValueChanged<String> onApprove;
-  final void Function(String approvalId, {String? note}) onReject;
-  final VoidCallback onCancel;
-  final ValueChanged<String> onReply;
+  final ({String name, String? branch})? projectContext;
+  final Future<void> Function(String approvalId) onApprove;
+  final Future<void> Function(String approvalId, {String? note}) onReject;
+  final VoidCallback onShowLogs;
   final Future<GitOperation> Function() onPrepareCommit;
   final Future<GitOperation> Function(
     String gitOperationId,
@@ -86,40 +259,56 @@ class _ExecutionView extends StatefulWidget {
   onConfirmCommit;
   final Future<GitOperation> Function(String gitOperationId) onDiscardCommit;
   final Future<TaskSummary?> Function(String prompt) onContinueWithNewTask;
+
   @override
   State<_ExecutionView> createState() => _ExecutionViewState();
 }
 
 class _ExecutionViewState extends State<_ExecutionView> {
-  final _reply = TextEditingController();
   bool _preparingCommit = false;
-  @override
-  void dispose() {
-    _reply.dispose();
-    super.dispose();
+  bool _showAllSteps = false;
+
+  static const int _visibleSteps = 6;
+
+  Future<void> _resolveApproval(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Couldn't resolve this approval"),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _resolveApproval(action),
+          ),
+        ),
+      );
+    }
   }
 
-  Future<void> _startCommitFlow(BuildContext context) async {
+  Future<void> _startCommitFlow() async {
     setState(() => _preparingCommit = true);
     GitOperation operation;
     try {
       operation = await widget.onPrepareCommit();
-    } catch (e) {
-      if (!context.mounted) return;
+    } catch (_) {
+      if (!mounted) return;
       setState(() => _preparingCommit = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not prepare commit: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Couldn't prepare the commit"),
+          action: SnackBarAction(label: 'Retry', onPressed: _startCommitFlow),
+        ),
+      );
       return;
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
     setState(() => _preparingCommit = false);
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CommitPushSheet(
+    await showStitchSheet<void>(
+      context,
+      child: _CommitPushSheet(
         operation: operation,
         onConfirm: widget.onConfirmCommit,
         onDiscard: widget.onDiscardCommit,
@@ -127,356 +316,195 @@ class _ExecutionViewState extends State<_ExecutionView> {
     );
   }
 
-  Future<void> _startFollowUpTask(BuildContext context) async {
-    final newTaskId = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _FollowUpTaskSheet(onSubmit: widget.onContinueWithNewTask),
+  Future<void> _startFollowUpTask() async {
+    final newTaskId = await showStitchSheet<String>(
+      context,
+      title: 'Start a follow-up task',
+      child: _FollowUpTaskSheet(
+        projectContext: widget.projectContext,
+        onSubmit: widget.onContinueWithNewTask,
+      ),
     );
-    if (newTaskId != null && context.mounted) {
-      context.go('/session/$newTaskId');
+    if (newTaskId != null && mounted) {
+      // Replace rather than stack sessions so "back" from the new task
+      // still returns to where the user came from originally.
+      context.pushReplacement('/session/$newTaskId');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final task = widget.session.task;
+    final session = widget.session;
+    final task = session.task;
     ApprovalRequest? approval;
-    for (final item in widget.session.approvals) {
+    for (final item in session.approvals) {
       if (item.status == ApprovalStatus.pending) {
         approval = item;
         break;
       }
     }
     final complete = task.status.isTerminal;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(28, 14, 28, 116),
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => context.go('/activity'),
-              icon: const Icon(Icons.chevron_left_rounded, size: 34),
-            ),
-            const Spacer(),
-            IconButton(
-              onPressed: () => _showLogs(context),
-              icon: const Icon(Icons.terminal_rounded),
-            ),
-          ],
-        ),
-        const SizedBox(height: 32),
-        Center(
-          child: Column(
-            children: [
-              PhodexMascot(size: 64, mood: moodForTaskStatus(task.status)),
-              const SizedBox(height: 18),
-              Text(
-                complete ? task.status.value.toUpperCase() : 'EXECUTION LIVE',
-                style: TextStyle(
-                  letterSpacing: 2,
-                  color: taskStatusColor(context.colors, task.status.value),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                task.title ?? task.prompt,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.display(
-                  fontSize: 24,
-                  height: 1.2,
-                  color: context.colors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                task.currentPhase ??
-                    (complete ? 'Execution finished' : 'Your agent is working'),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: context.colors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 42),
-        if (!complete) const LinearProgressIndicator(),
-        const SizedBox(height: 34),
-        _Timeline(
-          events: widget.session.events,
-          onShowAll: () => _showLogs(context),
-        ),
-        if (approval != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 26),
-            child: _ApprovalBlock(
-              approval: approval,
-              busy: widget.session.isResolvingApproval,
-              onApprove: () => widget.onApprove(approval!.id),
-              onReject: () async {
-                final reason = await showRejectReasonDialog(context);
-                if (reason == null) return;
-                widget.onReject(
-                  approval!.id,
-                  note: reason.isEmpty ? null : reason,
-                );
-              },
-            ),
-          ),
-        if (complete)
-          _CompletionCard(task: task, messages: widget.session.messages),
-        if (complete && widget.session.issues.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Column(
-              children: [
-                for (final issue in widget.session.issues)
-                  IssueCard(issue: issue),
-              ],
-            ),
-          ),
-        const SizedBox(height: 36),
-        if (complete && task.status == TaskStatus.completed) ...[
-          SizedBox(
-            height: 56,
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _preparingCommit
-                  ? null
-                  : () => _startCommitFlow(context),
-              icon: _preparingCommit
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.upload_rounded, size: 18),
-              label: Text(
-                _preparingCommit ? 'Checking for changes…' : 'Commit & Push',
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.colors.accentPrimary,
-                side: BorderSide(color: context.colors.accentPrimary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (complete) ...[
-          StitchPrimaryButton(
-            label: 'Done',
-            onPressed: () => context.go('/activity'),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => _startFollowUpTask(context),
-            child: const Text('Start a follow-up task'),
-          ),
-        ] else
-          SizedBox(
-            height: 50,
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _showLogs(context),
-              icon: const Icon(Icons.terminal_rounded, size: 18),
-              label: const Text('View terminal logs'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.colors.textSecondary,
-                side: BorderSide(color: context.colors.borderSubtle),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-        if (!complete) ...[
-          TextButton(
-            onPressed: widget.onCancel,
-            child: Text(
-              'Cancel task',
-              style: TextStyle(color: context.colors.accentError),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-            decoration: BoxDecoration(
-              color: context.colors.bgCard,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _reply,
-                    decoration: const InputDecoration(
-                      hintText: 'Message your agent',
-                      border: InputBorder.none,
-                      filled: false,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    final message = _reply.text.trim();
-                    if (message.isNotEmpty) {
-                      widget.onReply(message);
-                      _reply.clear();
-                    }
-                  },
-                  icon: const Icon(Icons.arrow_upward_rounded),
-                  style: IconButton.styleFrom(
-                    backgroundColor: context.colors.accentPrimary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
 
-  void _showLogs(BuildContext context) => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) =>
-        _LogsSheet(events: widget.session.events, onCancel: widget.onCancel),
-  );
-}
+    // The worker's phase ("booting worker", "analyzing context") adds detail
+    // beyond the status chip — but only while live, and only when it says
+    // something the chip doesn't already.
+    final phaseLabel = task.currentPhase == null
+        ? null
+        : traceTypeLabel(task.currentPhase!);
+    final showPhase =
+        !complete &&
+        phaseLabel != null &&
+        phaseLabel.toLowerCase() !=
+            taskStatusLabel(task.status.value).toLowerCase();
 
-(IconData, Color) _timelineIconFor(AppColors colors, String eventType) =>
-    switch (eventType) {
-      'task.starting' => (
-        Icons.play_circle_outline_rounded,
-        colors.accentPrimary,
-      ),
-      'task.running' => (Icons.autorenew_rounded, colors.accentPrimary),
-      'task.completed' => (Icons.check_circle_rounded, colors.accentSuccess),
-      'task.failed' => (Icons.error_rounded, colors.accentError),
-      'task.cancelled' => (Icons.stop_circle_rounded, colors.textMuted),
-      'task.progress' => (Icons.circle, colors.textMuted),
-      'git.started' => (Icons.upload_rounded, colors.accentPrimary),
-      'git.completed' => (Icons.check_circle_rounded, colors.accentSuccess),
-      'git.failed' => (Icons.error_rounded, colors.accentError),
-      'git.discarded' => (Icons.stop_circle_rounded, colors.textMuted),
-      _ => (Icons.circle, colors.textMuted),
-    };
-
-String _capitalize(String value) =>
-    value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
-
-class _Timeline extends StatelessWidget {
-  const _Timeline({required this.events, required this.onShowAll});
-  final List<TaskEventEnvelope> events;
-  final VoidCallback onShowAll;
-
-  static const int _visibleCap = 6;
-
-  @override
-  Widget build(BuildContext context) {
-    // Raw per-line log output (agent stdout, git command output) belongs in
-    // the "Execution logs" sheet, not the milestone timeline — otherwise a
-    // verbose git push floods this list and the "+N more steps" button
-    // opens a sheet that doesn't even show the events that caused it.
-    final steps = events
+    // Raw per-line log output belongs in the logs sheet, not the milestone
+    // trace — otherwise a verbose git push floods the timeline.
+    final steps = session.events
         .where((event) => event.type != 'task.log' && event.type != 'git.log')
         .toList();
-    final visible = steps.take(_visibleCap).toList();
-    final remaining = steps.length - visible.length;
-    final timeFormat = DateFormat.Hm();
+    final hidden = _showAllSteps
+        ? 0
+        : (steps.length - _visibleSteps).clamp(0, steps.length);
+    final visibleSteps = steps.sublist(hidden);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screen,
+        AppSpacing.s16,
+        AppSpacing.screen,
+        complete ? AppSpacing.s32 : _composerClearance,
+      ),
       children: [
-        for (final (i, event) in visible.indexed)
+        Wrap(
+          spacing: AppSpacing.s8,
+          runSpacing: AppSpacing.s8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            TaskStatusChip(
+              status: task.status.value,
+              pulse: session.isExecuting,
+            ),
+            if (widget.projectContext case final projectContext?)
+              ContextPill(
+                name: projectContext.name,
+                branch: projectContext.branch,
+              ),
+          ],
+        ),
+        if (session.isReconnecting) ...[
+          const SizedBox(height: AppSpacing.s12),
+          const StatusBanner(
+            tone: StatusTone.warning,
+            busy: true,
+            message: 'Reconnecting to live updates…',
+          ),
+        ],
+        const SizedBox(height: AppSpacing.s16),
+        Text(
+          task.prompt,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.bodyMedium,
+        ),
+        if (showPhase) ...[
+          const SizedBox(height: AppSpacing.s4),
+          Text(phaseLabel, style: context.text.labelMedium),
+        ],
+        const SizedBox(height: AppSpacing.s24),
+        StitchSectionLabel(
+          'Execution trace',
+          trailing: TextButton.icon(
+            onPressed: widget.onShowLogs,
+            icon: const Icon(Icons.terminal_rounded, size: 18),
+            label: const Text('Logs'),
+          ),
+        ),
+        if (steps.isEmpty)
+          Text(
+            complete
+                ? 'No steps were recorded for this task.'
+                : 'Waiting for the first step…',
+            style: context.text.bodySmall,
+          ),
+        if (hidden > 0)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => setState(() => _showAllSteps = true),
+              child: Text('Show $hidden earlier steps'),
+            ),
+          ),
+        for (final (i, event) in visibleSteps.indexed)
           StaggerIn(
             key: ValueKey(event.eventId),
             index: i,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Builder(
-                    builder: (context) {
-                      final (icon, color) = _timelineIconFor(
-                        context.colors,
-                        event.type,
-                      );
-                      final isDot =
-                          event.type == 'task.progress' ||
-                          !{
-                            'task.starting',
-                            'task.running',
-                            'task.completed',
-                            'task.failed',
-                            'task.cancelled',
-                            'git.started',
-                            'git.completed',
-                            'git.failed',
-                            'git.discarded',
-                          }.contains(event.type);
-                      return Container(
-                        width: 22,
-                        height: 22,
-                        alignment: Alignment.center,
-                        child: Icon(icon, size: isDot ? 8 : 18, color: color),
+              padding: const EdgeInsets.only(bottom: AppSpacing.s8),
+              child: TraceCard(event: event),
+            ),
+          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 320),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, .25),
+              end: Offset.zero,
+            ).animate(animation),
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: approval == null
+              ? const SizedBox.shrink()
+              : Padding(
+                  key: ValueKey(approval.id),
+                  padding: const EdgeInsets.only(top: AppSpacing.s16),
+                  child: _ApprovalBlock(
+                    approval: approval,
+                    busy: session.isResolvingApproval,
+                    onApprove: () =>
+                        _resolveApproval(() => widget.onApprove(approval!.id)),
+                    onReject: () async {
+                      final reason = await showRejectReasonDialog(context);
+                      if (reason == null) return;
+                      await _resolveApproval(
+                        () => widget.onReject(
+                          approval!.id,
+                          note: reason.isEmpty ? null : reason,
+                        ),
                       );
                     },
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _capitalize(
-                        event.data['message']?.toString() ??
-                            event.type.replaceAll('.', ' '),
-                      ),
-                      style: const TextStyle(fontSize: 15.5, height: 1.35),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    timeFormat.format(event.timestamp.toLocal()),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        if (remaining > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 34),
-            child: TextButton(
-              onPressed: onShowAll,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(0, 32),
-                alignment: Alignment.centerLeft,
-              ),
-              child: Text(
-                '+$remaining more steps',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: context.colors.accentPrimary,
                 ),
-              ),
+        ),
+        if (complete) ...[
+          const SizedBox(height: AppSpacing.s16),
+          _CompletionCard(task: task, messages: session.messages),
+          if (session.issues.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s16),
+            for (final issue in session.issues) IssueCard(issue: issue),
+          ],
+          const SizedBox(height: AppSpacing.s24),
+          if (task.status == TaskStatus.completed) ...[
+            StitchSecondaryButton(
+              label: _preparingCommit
+                  ? 'Checking for changes…'
+                  : 'Commit & Push',
+              icon: Icons.upload_rounded,
+              onPressed: _preparingCommit ? null : _startCommitFlow,
             ),
+            const SizedBox(height: AppSpacing.s12),
+          ],
+          StitchPrimaryButton(
+            label: 'Done',
+            onPressed: () => stitchPopOrGo(context, '/activity'),
           ),
+          const SizedBox(height: AppSpacing.s8),
+          TextButton(
+            onPressed: _startFollowUpTask,
+            child: const Text('Start a follow-up task'),
+          ),
+        ],
       ],
     );
   }
@@ -489,54 +517,71 @@ class _ApprovalBlock extends StatelessWidget {
     required this.onApprove,
     required this.onReject,
   });
+
   final ApprovalRequest approval;
   final bool busy;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final command = approval.payload['command']?.toString() ?? approval.title;
+    final workdir = approval.payload['workdir']?.toString();
+    final preview = workdir == null
+        ? '\$ $command'
+        : '\$ $command\n# in $workdir';
     return StitchCard(
+      border: Border.all(color: colors.accentWarning.withValues(alpha: .5)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'HUMAN VERIFICATION NEEDED',
-            style: TextStyle(
-              letterSpacing: 1.1,
-              color: context.colors.accentWarning,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.gpp_maybe_outlined,
+                size: 18,
+                color: colors.accentWarning,
+              ),
+              const SizedBox(width: AppSpacing.s8),
+              Text(
+                'HUMAN VERIFICATION NEEDED',
+                style: context.text.labelSmall?.copyWith(
+                  color: colors.accentWarning,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          Text(
-            approval.title,
-            style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            '\$ $command',
-            style: AppTypography.code(color: context.colors.accentPrimary),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            approval.description,
-            style: TextStyle(color: context.colors.textSecondary),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.s12),
+          Text(approval.title, style: context.text.titleLarge),
+          const SizedBox(height: AppSpacing.s8),
+          Text(approval.description, style: context.text.bodyMedium),
+          const SizedBox(height: AppSpacing.s12),
+          StitchTerminalBlock(text: preview, maxLines: 4),
+          const SizedBox(height: AppSpacing.s16),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: busy ? null : onReject,
-                  child: const Text('Reject'),
+                  child: Semantics(
+                    label: 'Reject: ${approval.title}',
+                    excludeSemantics: true,
+                    child: const Text('Reject'),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.s12),
               Expanded(
                 child: FilledButton(
                   onPressed: busy ? null : onApprove,
-                  child: Text(busy ? 'Resolving…' : 'Approve'),
+                  child: Semantics(
+                    label: busy
+                        ? 'Resolving approval'
+                        : 'Approve: ${approval.title}',
+                    excludeSemantics: true,
+                    child: Text(busy ? 'Resolving…' : 'Approve'),
+                  ),
                 ),
               ),
             ],
@@ -547,12 +592,112 @@ class _ApprovalBlock extends StatelessWidget {
   }
 }
 
+class _CompletionCard extends StatelessWidget {
+  const _CompletionCard({required this.task, required this.messages});
+  final TaskSummary task;
+  final List<TaskMessage> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    final assistantMessages = messages
+        .where((message) => message.role == TaskMessageRole.assistant)
+        .toList();
+    final summary =
+        task.finalSummary ??
+        task.errorMessage ??
+        (assistantMessages.isEmpty
+            ? 'Execution finished.'
+            : assistantMessages.last.content);
+    final mood = moodForTaskStatus(task.status);
+    return StitchCard(
+      child: Column(
+        children: [
+          PhodexMascot(size: 64, mood: mood),
+          const SizedBox(height: AppSpacing.s12),
+          Text(
+            taskStatusLabel(task.status.value),
+            style: context.text.titleMedium?.copyWith(
+              color: taskStatusColor(context.colors, task.status.value),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s8),
+          Text(
+            summary,
+            textAlign: TextAlign.center,
+            style: context.text.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Grey placeholder blocks shaped like the loaded screen (status row,
+/// prompt, a few trace cards) so the layout doesn't jump when data lands.
+class _SessionSkeleton extends StatelessWidget {
+  const _SessionSkeleton();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Loading task',
+    liveRegion: true,
+    child: ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screen,
+          AppSpacing.s16,
+          AppSpacing.screen,
+          AppSpacing.screen,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                _Bone(width: AppSpacing.s48 * 2, height: AppSpacing.s32),
+                SizedBox(width: AppSpacing.s8),
+                _Bone(width: AppSpacing.s48 * 3, height: AppSpacing.s32),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s16),
+            const _Bone(height: AppSpacing.s20),
+            const SizedBox(height: AppSpacing.s8),
+            const _Bone(width: AppSpacing.s48 * 4, height: AppSpacing.s20),
+            const SizedBox(height: AppSpacing.s32),
+            for (var i = 0; i < 4; i++) ...[
+              const _Bone(height: AppSpacing.s48 + AppSpacing.s16),
+              const SizedBox(height: AppSpacing.s8),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _Bone extends StatelessWidget {
+  const _Bone({this.width = double.infinity, required this.height});
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: context.colors.bgInput,
+      borderRadius: BorderRadius.circular(AppRadii.chip),
+    ),
+  );
+}
+
 class _CommitPushSheet extends StatefulWidget {
   const _CommitPushSheet({
     required this.operation,
     required this.onConfirm,
     required this.onDiscard,
   });
+
   final GitOperation operation;
   final Future<GitOperation> Function(
     String gitOperationId,
@@ -571,6 +716,7 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
   );
   late GitOperation _operation = widget.operation;
   bool _busy = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -583,159 +729,137 @@ class _CommitPushSheetState extends State<_CommitPushSheet> {
       _operation.status == GitOperationStatus.failed;
 
   Future<void> _confirm() async {
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       final resolved = await widget.onConfirm(
         _operation.id,
         _message.text.trim(),
       );
+      if (!mounted) return;
       setState(() {
         _operation = resolved;
         _busy = false;
       });
-    } catch (e) {
-      setState(() => _busy = false);
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Commit & push failed: $e')));
+      setState(() {
+        _busy = false;
+        _error = "Couldn't commit and push. Check the runtime and try again.";
+      });
     }
   }
 
   Future<void> _discard() async {
     setState(() => _busy = true);
-    await widget.onDiscard(_operation.id);
-    if (!mounted) return;
-    Navigator.pop(context);
+    try {
+      await widget.onDiscard(_operation.id);
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        Navigator.pop(context);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        20,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      decoration: BoxDecoration(
-        color: context.colors.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
+    final colors = context.colors;
+    if (_resolved) {
+      final ok = _operation.status == GitOperationStatus.completed;
+      return Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
-            child: Container(
-              width: 42,
-              height: 5,
-              decoration: BoxDecoration(
-                color: context.colors.borderSubtle,
-                borderRadius: BorderRadius.circular(5),
+            child: PhodexMascot(
+              size: 64,
+              mood: ok ? MascotMood.success : MascotMood.error,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          Text(
+            ok ? 'Pushed to GitHub' : "Couldn't push",
+            textAlign: TextAlign.center,
+            style: context.text.headlineSmall,
+          ),
+          if (_operation.errorMessage case final error?) ...[
+            const SizedBox(height: AppSpacing.s8),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: context.text.bodyMedium?.copyWith(
+                color: colors.accentError,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s24),
+          StitchPrimaryButton(
+            label: 'Close',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Commit & push to GitHub', style: context.text.headlineSmall),
+        const SizedBox(height: AppSpacing.s16),
+        TextField(
+          controller: _message,
+          decoration: const InputDecoration(labelText: 'Commit message'),
+        ),
+        const SizedBox(height: AppSpacing.s16),
+        if ((_operation.statusOutput ?? '').isNotEmpty) ...[
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: AppSpacing.s48 * 4),
+            child: SingleChildScrollView(
+              child: StitchTerminalBlock(
+                label: 'Changes',
+                text: _operation.statusOutput!,
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          if (_resolved) ...[
-            Icon(
-              _operation.status == GitOperationStatus.completed
-                  ? Icons.check_circle
-                  : Icons.error_outline,
-              size: 48,
-              color: _operation.status == GitOperationStatus.completed
-                  ? context.colors.accentSuccess
-                  : context.colors.accentError,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              _operation.status == GitOperationStatus.completed
-                  ? 'Pushed to GitHub'
-                  : "Couldn't push",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            ),
-            if (_operation.errorMessage != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _operation.errorMessage!,
-                style: TextStyle(color: context.colors.textSecondary),
-              ),
-            ],
-            const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: StitchPrimaryButton(
-                label: 'Close',
-                onPressed: () => Navigator.pop(context),
+          const SizedBox(height: AppSpacing.s16),
+        ],
+        if (_error case final error?) ...[
+          StatusBanner(tone: StatusTone.error, message: error),
+          const SizedBox(height: AppSpacing.s16),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _busy ? null : _discard,
+                child: const Text('Discard'),
               ),
             ),
-          ] else ...[
-            const Text(
-              'Commit & push to GitHub',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _message,
-              decoration: const InputDecoration(labelText: 'Commit message'),
-            ),
-            const SizedBox(height: 16),
-            if ((_operation.statusOutput ?? '').isNotEmpty) ...[
-              Text(
-                'CHANGES',
-                style: TextStyle(
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.textMuted,
-                ),
+            const SizedBox(width: AppSpacing.s12),
+            Expanded(
+              child: FilledButton(
+                onPressed: _busy ? null : _confirm,
+                child: Text(_busy ? 'Pushing…' : 'Commit & push'),
               ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 160),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.colors.bgInput,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    _operation.statusOutput ?? '',
-                    style: AppTypography.code(
-                      fontSize: 13,
-                      color: context.colors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _busy ? null : _discard,
-                    child: const Text('Discard'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _busy ? null : _confirm,
-                    child: Text(_busy ? 'Pushing…' : 'Commit & push'),
-                  ),
-                ),
-              ],
             ),
           ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
 class _FollowUpTaskSheet extends StatefulWidget {
-  const _FollowUpTaskSheet({required this.onSubmit});
+  const _FollowUpTaskSheet({
+    required this.projectContext,
+    required this.onSubmit,
+  });
+
+  final ({String name, String? branch})? projectContext;
   final Future<TaskSummary?> Function(String prompt) onSubmit;
 
   @override
@@ -745,6 +869,7 @@ class _FollowUpTaskSheet extends StatefulWidget {
 class _FollowUpTaskSheetState extends State<_FollowUpTaskSheet> {
   final _prompt = TextEditingController();
   bool _submitting = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -755,7 +880,10 @@ class _FollowUpTaskSheetState extends State<_FollowUpTaskSheet> {
   Future<void> _submit() async {
     final prompt = _prompt.text.trim();
     if (prompt.isEmpty || _submitting) return;
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
       final task = await widget.onSubmit(prompt);
       if (!mounted) return;
@@ -764,61 +892,110 @@ class _FollowUpTaskSheetState extends State<_FollowUpTaskSheet> {
       } else {
         setState(() => _submitting = false);
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      setState(() => _submitting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not start task: $e')));
+      setState(() {
+        _submitting = false;
+        _error = "Couldn't start the task. Try again.";
+      });
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        20,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(
+        'Phodex keeps the same repository and picks up where this task '
+        'left off.',
+        style: context.text.bodyMedium,
       ),
-      decoration: BoxDecoration(
-        color: context.colors.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 42,
-              height: 5,
-              decoration: BoxDecoration(
-                color: context.colors.borderSubtle,
-                borderRadius: BorderRadius.circular(5),
+      const SizedBox(height: AppSpacing.s16),
+      if (_error case final error?) ...[
+        StatusBanner(tone: StatusTone.error, message: error),
+        const SizedBox(height: AppSpacing.s12),
+      ],
+      ComposerBar(
+        controller: _prompt,
+        autofocus: true,
+        hint: 'Describe what you need built next…',
+        sending: _submitting,
+        onSend: _submit,
+        context: widget.projectContext == null
+            ? null
+            : ContextPill(
+                name: widget.projectContext!.name,
+                branch: widget.projectContext!.branch,
               ),
+      ),
+    ],
+  );
+}
+
+/// Raw command output and log lines on the terminal surface — the one place
+/// the UI is deliberately dark in both themes.
+class _LogsSheet extends StatelessWidget {
+  const _LogsSheet({required this.events, required this.onForceTerminate});
+
+  final List<TaskEventEnvelope> events;
+  final Future<void> Function()? onForceTerminate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final logs = events
+        .where((event) => event.type == 'task.log' || event.type == 'git.log')
+        .toList();
+    final height = MediaQuery.sizeOf(context).height * .6;
+    return SizedBox(
+      height: height,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.s16),
+              decoration: BoxDecoration(
+                color: colors.terminalBg,
+                borderRadius: BorderRadius.circular(AppRadii.button),
+              ),
+              child: logs.isEmpty
+                  ? Text(
+                      'No log output yet.',
+                      style: AppTypography.code(color: colors.terminalMuted),
+                    )
+                  : ListView.separated(
+                      itemCount: logs.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.s12),
+                      itemBuilder: (context, index) =>
+                          _LogEntry(event: logs[index]),
+                    ),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Start a follow-up task',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _prompt,
-            autofocus: true,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Describe what you need built next…',
-            ),
-          ),
-          const SizedBox(height: 16),
-          StitchPrimaryButton(
-            label: _submitting ? 'Starting…' : 'Start task',
-            onPressed: _submitting ? null : _submit,
+          const SizedBox(height: AppSpacing.s16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ),
+              if (onForceTerminate case final terminate?) ...[
+                const SizedBox(width: AppSpacing.s12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      terminate();
+                    },
+                    child: const Text('Force terminate'),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -826,111 +1003,34 @@ class _FollowUpTaskSheetState extends State<_FollowUpTaskSheet> {
   }
 }
 
-class _CompletionCard extends StatelessWidget {
-  const _CompletionCard({required this.task, required this.messages});
-  final TaskSummary task;
-  final List<TaskMessage> messages;
-  @override
-  Widget build(BuildContext context) {
-    final assistantMessages = messages
-        .where((message) => message.role == TaskMessageRole.assistant)
-        .toList();
-    final summary =
-        task.finalSummary ??
-        task.errorMessage ??
-        (assistantMessages.isEmpty
-            ? 'Execution finished.'
-            : assistantMessages.last.content);
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: StitchCard(
-        child: Column(
-          children: [
-            Icon(
-              task.status == TaskStatus.completed
-                  ? Icons.check_circle
-                  : Icons.info_outline,
-              size: 56,
-              color: task.status == TaskStatus.completed
-                  ? context.colors.accentSuccess
-                  : context.colors.accentError,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              summary,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                height: 1.5,
-                color: context.colors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+class _LogEntry extends StatelessWidget {
+  const _LogEntry({required this.event});
+  final TaskEventEnvelope event;
 
-class _LogsSheet extends StatelessWidget {
-  const _LogsSheet({required this.events, required this.onCancel});
-  final List<TaskEventEnvelope> events;
-  final VoidCallback onCancel;
   @override
   Widget build(BuildContext context) {
-    final logs = events
-        .where((event) => event.type == 'task.log' || event.type == 'git.log')
-        .toList();
-    return Container(
-      height: MediaQuery.sizeOf(context).height * .76,
-      padding: const EdgeInsets.all(22),
-      decoration: const BoxDecoration(
-        color: Color(0xFF171717),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+    final colors = context.colors;
+    final details = TraceDetails.of(event);
+    final message = event.data['message']?.toString();
+    final lines = <(String, Color)>[
+      if (message != null && message.isNotEmpty) (message, colors.terminalText),
+      if (details.command != null)
+        ('\$ ${details.command}', colors.terminalText),
+      if (details.output != null) (details.output!, colors.terminalMuted),
+      for (final change in details.fileChanges)
+        (
+          '${change.action} ${change.path} +${change.added} −${change.removed}',
+          colors.terminalMuted,
+        ),
+    ];
+    if (lines.isEmpty) lines.add((event.type, colors.terminalMuted));
+    return Semantics(
+      label: 'Log: ${event.type}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Execution logs',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 25,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Expanded(
-            child: ListView(
-              children: [
-                for (final log in logs)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      log.data['message']?.toString() ?? log.type,
-                      style: AppTypography.code(color: const Color(0xFFD5D5D5)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.tonal(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton(
-                  onPressed: onCancel,
-                  child: const Text('Force terminate'),
-                ),
-              ),
-            ],
-          ),
+          for (final (text, color) in lines)
+            Text(text, style: AppTypography.code(color: color)),
         ],
       ),
     );

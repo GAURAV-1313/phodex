@@ -8,6 +8,15 @@ final homeTasksProvider =
       HomeTasksController.new,
     );
 
+/// Thrown when a task is requested with no repository selected — the UI
+/// blocks this up front, so reaching it means a caller bypassed the guard.
+class NoProjectContextException implements Exception {
+  const NoProjectContextException();
+
+  @override
+  String toString() => 'Pick a repository before starting a task.';
+}
+
 class HomeTasksController extends AsyncNotifier<List<TaskSummary>> {
   @override
   Future<List<TaskSummary>> build() async {
@@ -32,17 +41,26 @@ class HomeTasksController extends AsyncNotifier<List<TaskSummary>> {
     try {
       final tasks = await taskRepository.listTasks();
       state = AsyncData(tasks);
-    } catch (_) {
-      // Keep showing the last known list on a transient failure.
+    } catch (error, stackTrace) {
+      // Keep showing the last known list on a transient failure; only
+      // surface the error if there was never a list to fall back to.
+      if (!state.hasValue) {
+        state = AsyncError(error, stackTrace);
+      }
     }
   }
 
+  /// Creates a task against the selected project context. A task is never
+  /// created without one — the agent would have nothing to work in.
   Future<TaskSummary> createTask(String prompt) async {
     final taskRepository = ref.read(taskRepositoryProvider);
     final context = ref.read(selectedProjectContextProvider).asData?.value;
+    if (context == null) {
+      throw const NoProjectContextException();
+    }
     final task = await taskRepository.createTask(
       prompt: prompt,
-      projectContextId: context?.id,
+      projectContextId: context.id,
     );
     await refresh();
     return task;

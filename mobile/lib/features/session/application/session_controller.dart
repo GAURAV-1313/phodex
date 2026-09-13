@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/domain/models/models.dart';
@@ -26,30 +27,89 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
   final Ref _ref;
   final String _taskId;
   StreamSubscription<TaskEventEnvelope>? _subscription;
+  Timer? _reconnectTimer;
+  int _reconnectAttempt = 0;
+  bool _disposed = false;
+
+  /// Backoff ladder for resubscribing after the stream drops: 1s, 2s, 4s …
+  /// capped so a long outage never waits more than [_maxReconnectDelay].
+  static const _maxReconnectDelay = Duration(seconds: 20);
 
   Future<void> _init() async {
+    _reconnectTimer?.cancel();
+    _reconnectAttempt = 0;
     state = await AsyncValue.guard(() async {
       final taskRepository = _ref.read(taskRepositoryProvider);
       final detail = await taskRepository.getTaskDetail(_taskId);
-      final session = SessionUiState(
+      return SessionUiState(
         task: detail.task,
         messages: detail.messages,
         events: detail.events,
         approvals: detail.approvals,
         issues: detail.issues,
+        connection: detail.task.status.isTerminal
+            ? SessionConnection.closed
+            : SessionConnection.connecting,
       );
-      _subscribeToEvents(afterSequence: session.latestSequence);
-      return session;
     });
+    // Subscribe only once the session is in [state]: a stream that drops
+    // immediately must find a session to mark as reconnecting. Terminal
+    // tasks still subscribe — git operations emit events after completion.
+    final session = state.asData?.value;
+    if (session != null) {
+      _subscribeToEvents(afterSequence: session.latestSequence);
+    }
   }
 
   void _subscribeToEvents({required int afterSequence}) {
     _subscription?.cancel();
+    if (_disposed) return;
 
     final streamRepository = _ref.read(sessionStreamRepositoryProvider);
     _subscription = streamRepository
         .subscribe(taskId: _taskId, afterSequence: afterSequence)
-        .listen(_applyIncomingEvent);
+        .listen(
+          (event) {
+            _reconnectAttempt = 0;
+            _setConnection(SessionConnection.live);
+            _applyIncomingEvent(event);
+          },
+          onError: (Object _) => _scheduleReconnect(),
+          onDone: _scheduleReconnect,
+          cancelOnError: true,
+        );
+  }
+
+  /// The stream ended or failed. If the task is still live that is a
+  /// dropped connection, so back off and resubscribe from the last
+  /// sequence we saw; if the task already finished the server simply closed
+  /// the stream and there is nothing to reconnect to.
+  void _scheduleReconnect() {
+    if (_disposed) return;
+    final current = state.asData?.value;
+    if (current == null) return;
+    if (current.task.status.isTerminal) {
+      _setConnection(SessionConnection.closed);
+      return;
+    }
+    _setConnection(SessionConnection.reconnecting);
+    final seconds = math.min(
+      1 << _reconnectAttempt,
+      _maxReconnectDelay.inSeconds,
+    );
+    _reconnectAttempt += 1;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(Duration(seconds: seconds), () {
+      if (_disposed) return;
+      final latest = state.asData?.value.latestSequence ?? 0;
+      _subscribeToEvents(afterSequence: latest);
+    });
+  }
+
+  void _setConnection(SessionConnection connection) {
+    final current = state.asData?.value;
+    if (current == null || current.connection == connection) return;
+    state = AsyncData(current.copyWith(connection: connection));
   }
 
   void _applyIncomingEvent(TaskEventEnvelope event) {
@@ -57,7 +117,12 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
     if (current == null) {
       return;
     }
-    state = AsyncData(reduceSessionWithEvent(current, event));
+    final next = reduceSessionWithEvent(current, event);
+    state = AsyncData(
+      next.task.status.isTerminal
+          ? next.copyWith(connection: SessionConnection.closed)
+          : next,
+    );
   }
 
   Future<void> refresh() async {
@@ -73,19 +138,25 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
 
     state = AsyncData(current.copyWith(isSendingReply: true));
 
-    final taskRepository = _ref.read(taskRepositoryProvider);
-    final newMessage = await taskRepository.replyToTask(
-      taskId: _taskId,
-      content: content,
-    );
+    try {
+      final taskRepository = _ref.read(taskRepositoryProvider);
+      final newMessage = await taskRepository.replyToTask(
+        taskId: _taskId,
+        content: content,
+      );
 
-    final updated = state.asData?.value ?? current;
-    state = AsyncData(
-      updated.copyWith(
-        isSendingReply: false,
-        messages: [...updated.messages, newMessage],
-      ),
-    );
+      final updated = state.asData?.value ?? current;
+      state = AsyncData(
+        updated.copyWith(
+          isSendingReply: false,
+          messages: [...updated.messages, newMessage],
+        ),
+      );
+    } catch (_) {
+      final updated = state.asData?.value ?? current;
+      state = AsyncData(updated.copyWith(isSendingReply: false));
+      rethrow;
+    }
   }
 
   Future<TaskSummary?> continueWithNewTask(String prompt) async {
@@ -127,8 +198,14 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
 
     state = AsyncData(current.copyWith(isResolvingApproval: true));
 
-    final approvalRepository = _ref.read(approvalRepositoryProvider);
-    await approvalRepository.approve(approvalId: approvalId);
+    try {
+      final approvalRepository = _ref.read(approvalRepositoryProvider);
+      await approvalRepository.approve(approvalId: approvalId);
+    } catch (_) {
+      final updated = state.asData?.value ?? current;
+      state = AsyncData(updated.copyWith(isResolvingApproval: false));
+      rethrow;
+    }
 
     await refresh();
     await _ref.read(homeTasksProvider.notifier).refresh();
@@ -142,14 +219,22 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
 
     state = AsyncData(current.copyWith(isResolvingApproval: true));
 
-    final approvalRepository = _ref.read(approvalRepositoryProvider);
-    await approvalRepository.reject(approvalId: approvalId, note: note);
+    try {
+      final approvalRepository = _ref.read(approvalRepositoryProvider);
+      await approvalRepository.reject(approvalId: approvalId, note: note);
+    } catch (_) {
+      final updated = state.asData?.value ?? current;
+      state = AsyncData(updated.copyWith(isResolvingApproval: false));
+      rethrow;
+    }
 
     await refresh();
     await _ref.read(homeTasksProvider.notifier).refresh();
   }
 
   void disposeController() {
+    _disposed = true;
+    _reconnectTimer?.cancel();
     _subscription?.cancel();
   }
 }
