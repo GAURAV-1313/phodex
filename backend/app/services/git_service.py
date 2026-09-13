@@ -7,6 +7,7 @@ key, `gh` CLI, credential manager) is already configured on this machine,
 the same trust model already used for the Codex/Claude CLI.
 """
 
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 from sqlalchemy import select
@@ -16,11 +17,28 @@ from app.models.enums import GitOperationStatus
 from app.models.git_operation import GitOperation
 from app.models.project_context import ProjectContext
 from app.models.task import Task
+from app.repositories.git_repo import GitOperationRepository
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, NotFoundError
-from app.repositories.git_repo import GitOperationRepository
 from workers.common.context import resolve_workdir
 from workers.common.subprocess_io import ManagedSubprocess
+
+# Cloud runtime hooks (see app/services/cloud_repo_service.py). Both receive
+# (user_id, repo_path). The env resolver returns the environment git needs to
+# push from a cloud workspace (credential helper + commit identity) or None
+# for a desktop repository; the discard hook drops uncommitted changes in a
+# cloud workspace and reports whether it did.
+GitEnvResolver = Callable[[UUID, str], Awaitable[dict[str, str] | None]]
+DiscardHook = Callable[[UUID, str], Awaitable[bool]]
+
+_TOKEN_ENV = "PHODEX_GIT_TOKEN"
+
+
+def _scrub(line: str, secrets: list[str]) -> str:
+    for secret in secrets:
+        if secret:
+            line = line.replace(secret, "***")
+    return line
 
 
 class GitService:
@@ -29,10 +47,14 @@ class GitService:
         session_factory: async_sessionmaker[AsyncSession],
         event_service: EventService,
         git_repo: GitOperationRepository,
+        env_resolver: GitEnvResolver | None = None,
+        discard_hook: DiscardHook | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._event_service = event_service
         self._git_repo = git_repo
+        self._env_resolver = env_resolver
+        self._discard_hook = discard_hook
 
     async def prepare_commit(self, user_id: UUID, task_id: UUID) -> GitOperation:
         async with self._session_factory() as session:
@@ -87,17 +109,22 @@ class GitService:
             {"message": "Committing and pushing changes", "repo_path": operation.repo_path},
         )
 
+        env = None
+        if self._env_resolver is not None:
+            env = await self._env_resolver(user_id, operation.repo_path)
+        secrets = [env.get(_TOKEN_ENV, "")] if env else []
+
         try:
-            await self._run_git_streamed(task_id, operation.repo_path, ["add", "-A"])
+            await self._run_git_streamed(task_id, operation.repo_path, ["add", "-A"], env, secrets)
             await self._run_git_streamed(
-                task_id, operation.repo_path, ["commit", "-m", operation.commit_message]
+                task_id, operation.repo_path, ["commit", "-m", operation.commit_message], env, secrets
             )
             # `-u origin HEAD` rather than a bare `push`: sets upstream tracking
             # on the current branch's first-ever push (a bare `push` fails with
             # "no upstream branch" then), and is a harmless no-op once tracking
             # is already configured on later pushes.
             await self._run_git_streamed(
-                task_id, operation.repo_path, ["push", "-u", "origin", "HEAD"]
+                task_id, operation.repo_path, ["push", "-u", "origin", "HEAD"], env, secrets
             )
             pushed_branch = (
                 await self._run_git_capture(
@@ -131,8 +158,27 @@ class GitService:
     async def discard(self, user_id: UUID, task_id: UUID, git_operation_id: UUID) -> GitOperation:
         operation = await self._load_pending(user_id, task_id, git_operation_id)
         await self._set_status(operation.id, GitOperationStatus.REJECTED)
+        workspace_reset = False
+        if self._discard_hook is not None:
+            try:
+                workspace_reset = await self._discard_hook(user_id, operation.repo_path)
+            except Exception as exc:
+                await self._event_service.append_event(
+                    task_id,
+                    "git.log",
+                    {"message": f"Could not reset cloud workspace: {exc}", "source": "stderr"},
+                )
         await self._event_service.append_event(
-            task_id, "git.discarded", {"message": "Commit & push discarded by user"}
+            task_id,
+            "git.discarded",
+            {
+                "message": (
+                    "Changes discarded and cloud workspace reset"
+                    if workspace_reset
+                    else "Commit & push discarded by user"
+                ),
+                "workspace_reset": workspace_reset,
+            },
         )
         return await self._reload(operation.id)
 
@@ -179,11 +225,20 @@ class GitService:
         await managed.wait(timeout_seconds=30)
         return "\n".join(lines).strip()
 
-    async def _run_git_streamed(self, task_id: UUID, cwd: str, args: list[str]) -> None:
-        managed = await ManagedSubprocess.spawn(["git", *args], cwd=cwd, use_stdin=False)
+    async def _run_git_streamed(
+        self,
+        task_id: UUID,
+        cwd: str,
+        args: list[str],
+        env: dict[str, str] | None = None,
+        secrets: list[str] | None = None,
+    ) -> None:
+        managed = await ManagedSubprocess.spawn(["git", *args], cwd=cwd, use_stdin=False, env=env)
         stderr_tail: list[str] = []
+        redact = secrets or []
 
-        async def _on_line(line: str, source: str) -> None:
+        async def _on_line(raw_line: str, source: str) -> None:
+            line = _scrub(raw_line, redact)
             if source == "stderr":
                 stderr_tail.append(line)
             await self._event_service.append_event(

@@ -11,6 +11,7 @@ from app.api import (
     pairing,
     push,
     repos,
+    runtime,
     stream,
     tasks,
 )
@@ -24,6 +25,7 @@ api_router.include_router(git_ops.router)
 api_router.include_router(approvals.router)
 api_router.include_router(devices.router)
 api_router.include_router(repos.router)
+api_router.include_router(runtime.router)
 api_router.include_router(stream.router)
 api_router.include_router(health.router)
 api_router.include_router(pairing.router)

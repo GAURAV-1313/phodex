@@ -8,7 +8,6 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from starlette.middleware.base import RequestResponseEndpoint
 
 from app.api.error_handlers import register_exception_handlers
@@ -21,8 +20,6 @@ from app.core.metrics import (
     DB_POOL_SIZE,
     HTTP_DURATION,
     HTTP_REQUESTS,
-    RATE_LIMIT_REJECTIONS,
-    SSE_CONNECTION_DURATION,
     TASK_CREATE_DURATION,
     TASK_DETAIL_DURATION,
     metrics_response,
@@ -45,12 +42,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await redis.connect()
 
         async def _pool_metrics() -> None:
-            import asyncio
             while True:
                 try:
                     pool = engine.pool
-                    DB_POOL_SIZE.set(pool.status()["size"])
-                    DB_POOL_IDLE.set(pool.status()["idle"])
+                    size = getattr(pool, "size", None)
+                    checked_in = getattr(pool, "checkedin", None)
+                    if callable(size) and callable(checked_in):
+                        DB_POOL_SIZE.set(float(size()))
+                        DB_POOL_IDLE.set(float(checked_in()))
                 except Exception:
                     pass
                 await asyncio.sleep(5)
@@ -65,21 +64,58 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         configure_runtime_telemetry(app_settings, engine.sync_engine)
         _pool_task = asyncio.create_task(_pool_metrics())
 
-        _, is_guessed = resolve_public_base_url(app_settings)
-        note = " (same Wi-Fi only — set PUBLIC_BASE_URL for anywhere access)" if is_guessed else ""
-        print(
-            f"\n  Connect your phone: open http://localhost:8000/pair in a "
-            f"browser and scan the QR code{note}.\n",
-            flush=True,
-        )
+        if app_settings.demo_account_enabled:
+            await app.state.services.auth_service.ensure_password_account(
+                email=str(app_settings.demo_account_email),
+                password=str(app_settings.demo_account_password),
+                name=app_settings.demo_account_name,
+            )
+
+        _runner_task: asyncio.Task[None] | None = None
+        if app_settings.is_cloud_runtime:
+            cloud_repo_service = app.state.services.cloud_repo_service
+
+            async def _runner_heartbeat() -> None:
+                # Stands in for the laptop device agent: keeps every user's
+                # "Phodex Cloud" device marked online while this server runs.
+                while True:
+                    try:
+                        await cloud_repo_service.heartbeat_runners()
+                    except Exception as exc:
+                        structlog.get_logger(__name__).warning(
+                            "cloud_runner.heartbeat_failed", error=str(exc)
+                        )
+                    await asyncio.sleep(app_settings.cloud_runner_heartbeat_seconds)
+
+            _runner_task = asyncio.create_task(_runner_heartbeat())
+
+        base_url, is_guessed = resolve_public_base_url(app_settings)
+        if app_settings.is_cloud_runtime:
+            print(
+                f"\n  Phodex Cloud runtime ready: point the app at {base_url} "
+                f"(worker engine: {app_settings.worker_engine}).\n",
+                flush=True,
+            )
+        else:
+            note = (
+                " (same Wi-Fi only — set PUBLIC_BASE_URL for anywhere access)" if is_guessed else ""
+            )
+            print(
+                f"\n  Connect your phone: open http://localhost:8000/pair in a "
+                f"browser and scan the QR code{note}.\n",
+                flush=True,
+            )
 
         yield
 
-        _pool_task.cancel()
-        try:
-            await _pool_task
-        except asyncio.CancelledError:
-            pass
+        for background in (_pool_task, _runner_task):
+            if background is None:
+                continue
+            background.cancel()
+            try:
+                await background
+            except asyncio.CancelledError:
+                pass
         await app.state.services.event_service.close()
         await redis.close()
         await engine.dispose()
@@ -131,6 +167,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             "name": app_settings.app_name,
             "docs": "/docs",
+            "runtime_mode": app_settings.runtime_mode,
         }
 
     return app

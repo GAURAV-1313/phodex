@@ -3,7 +3,8 @@ from functools import lru_cache
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_SUPPORTED_WORKER_ENGINES = {"fake", "codex", "claude"}
+_SUPPORTED_WORKER_ENGINES = {"fake", "codex", "claude", "managed"}
+_SUPPORTED_RUNTIME_MODES = {"desktop", "cloud"}
 
 
 class Settings(BaseSettings):
@@ -107,6 +108,77 @@ class Settings(BaseSettings):
         default="medium", alias="CLAUDE_INITIAL_APPROVAL_RISK_LEVEL"
     )
     claude_default_workdir: str | None = Field(default=None, alias="CLAUDE_DEFAULT_WORKDIR")
+
+    # --- Managed Agents engine (WORKER_ENGINE=managed) -----------------------
+    # Anthropic hosts the agent loop and a per-session sandbox; see
+    # workers/managed/ and scripts/setup_managed_agent.py.
+    managed_agent_id: str | None = Field(default=None, alias="MANAGED_AGENT_ID")
+    managed_environment_id: str | None = Field(default=None, alias="MANAGED_ENVIRONMENT_ID")
+    managed_timeout_seconds: float = Field(default=1800.0, alias="MANAGED_TIMEOUT_SECONDS")
+    managed_require_initial_approval: bool = Field(
+        default=True, alias="MANAGED_REQUIRE_INITIAL_APPROVAL"
+    )
+    managed_initial_approval_risk_level: str = Field(
+        default="medium", alias="MANAGED_INITIAL_APPROVAL_RISK_LEVEL"
+    )
+
+    # --- Runtime mode -------------------------------------------------------
+    # "desktop": the backend runs on the developer's laptop and tasks operate on
+    # repositories the device agent found on disk (the original design).
+    # "cloud": the backend runs on a server with no laptop attached; users
+    # connect GitHub repositories, which are cloned under WORKSPACES_ROOT and
+    # executed there by the worker engine. The server registers itself as a
+    # synthetic "Phodex Cloud" device so the mobile runtime status shows
+    # online. See docs/cloud-runtime.md.
+    runtime_mode: str = Field(default="desktop", alias="RUNTIME_MODE")
+    workspaces_root: str = Field(default="/srv/phodex/workspaces", alias="WORKSPACES_ROOT")
+    cloud_runner_name: str = Field(default="Phodex Cloud", alias="CLOUD_RUNNER_NAME")
+    cloud_runner_heartbeat_seconds: int = Field(
+        default=30, alias="CLOUD_RUNNER_HEARTBEAT_SECONDS"
+    )
+    # Server-wide fallback GitHub token for cloning/pushing when a user has not
+    # stored their own (e.g. a demo deployment that only touches demo repos).
+    github_default_token: str | None = Field(default=None, alias="GITHUB_DEFAULT_TOKEN")
+    # Tests and local dev only: lets /repos/github/connect accept a local
+    # filesystem path instead of a github.com URL.
+    allow_local_git_urls: bool = Field(default=False, alias="ALLOW_LOCAL_GIT_URLS")
+    # Identity used for commits made from cloud workspaces (a container has no
+    # global git config). Overridden per user with their account name/email.
+    git_author_name: str = Field(default="Phodex Cloud", alias="PHODEX_GIT_AUTHOR_NAME")
+    git_author_email: str = Field(
+        default="phodex-cloud@users.noreply.github.com", alias="PHODEX_GIT_AUTHOR_EMAIL"
+    )
+    # Public demo account: created on startup when both are set, reachable via
+    # POST /auth/demo without a password (rate limited like every auth route).
+    demo_account_email: str | None = Field(default=None, alias="DEMO_ACCOUNT_EMAIL")
+    demo_account_password: str | None = Field(default=None, alias="DEMO_ACCOUNT_PASSWORD")
+    demo_account_name: str = Field(default="Phodex Demo", alias="DEMO_ACCOUNT_NAME")
+    # Comma-separated GitHub URLs the demo account is allowed to connect.
+    # Empty means unrestricted.
+    demo_repo_allowlist: str = Field(default="", alias="DEMO_REPO_ALLOWLIST")
+
+    @field_validator("runtime_mode")
+    @classmethod
+    def _normalize_runtime_mode(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in _SUPPORTED_RUNTIME_MODES:
+            raise ValueError(
+                f"Unsupported RUNTIME_MODE='{value}'. "
+                f"Use one of: {', '.join(sorted(_SUPPORTED_RUNTIME_MODES))}."
+            )
+        return normalized
+
+    @property
+    def is_cloud_runtime(self) -> bool:
+        return self.runtime_mode == "cloud"
+
+    @property
+    def demo_account_enabled(self) -> bool:
+        return bool(self.demo_account_email and self.demo_account_password)
+
+    @property
+    def demo_repo_allowlist_urls(self) -> list[str]:
+        return [item.strip() for item in self.demo_repo_allowlist.split(",") if item.strip()]
 
     @property
     def cors_origins(self) -> list[str]:

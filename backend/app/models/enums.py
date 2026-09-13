@@ -4,6 +4,7 @@ from enum import StrEnum
 class ProjectContextSourceType(StrEnum):
     LOCAL_SYNCED = "local_synced"
     MANUAL = "manual"
+    GITHUB = "github"
 
 
 class TaskStatus(StrEnum):

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class AiSettingsStatusResponse(BaseModel):
     has_anthropic_key: bool
     has_openai_key: bool
+    has_github_token: bool = False
     preferred_claude_model: str | None
     preferred_codex_model: str | None
 

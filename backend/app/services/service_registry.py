@@ -16,6 +16,7 @@ from app.repositories.user_repo import UserRepository
 from app.services.account_service import AccountService
 from app.services.approval_service import ApprovalService
 from app.services.auth_service import AuthService
+from app.services.cloud_repo_service import CloudRepoService
 from app.services.device_service import DeviceService
 from app.services.event_service import EventService
 from app.services.git_service import GitService
@@ -26,6 +27,7 @@ from app.services.repo_sync_service import RepoSyncService
 from app.services.task_service import TaskService
 from app.services.user_ai_settings_service import UserAiSettingsService
 from app.services.worker_dispatcher import WorkerDispatcher
+from workers.base import WorkerEngine
 
 
 @dataclass
@@ -42,6 +44,7 @@ class ServiceRegistry:
     worker_dispatcher: WorkerDispatcher
     git_service: GitService
     user_ai_settings_service: UserAiSettingsService
+    cloud_repo_service: CloudRepoService
     push_service: PushService
     redis: RedisService
 
@@ -94,6 +97,14 @@ def build_registry(
         user_ai_settings_repo=user_ai_settings_repo,
     )
 
+    cloud_repo_service = CloudRepoService(
+        session_factory=session_factory,
+        settings=settings,
+        repo_repo=repo_repo,
+        device_repo=device_repo,
+        user_ai_settings_service=user_ai_settings_service,
+    )
+
     worker_engine: WorkerEngine
     if settings.worker_engine == "codex":
         from workers.codex import CodexWorkerEngine
@@ -105,11 +116,24 @@ def build_registry(
             event_service=event_service,
             approval_service=approval_service,
             user_ai_settings_service=user_ai_settings_service,
+            cloud_repo_service=cloud_repo_service,
         )
     elif settings.worker_engine == "claude":
         from workers.claude import ClaudeWorkerEngine
 
         worker_engine = ClaudeWorkerEngine(
+            settings=settings,
+            session_factory=session_factory,
+            task_service=task_service,
+            event_service=event_service,
+            approval_service=approval_service,
+            user_ai_settings_service=user_ai_settings_service,
+            cloud_repo_service=cloud_repo_service,
+        )
+    elif settings.worker_engine == "managed":
+        from workers.managed import ManagedAgentWorkerEngine
+
+        worker_engine = ManagedAgentWorkerEngine(
             settings=settings,
             session_factory=session_factory,
             task_service=task_service,
@@ -164,8 +188,11 @@ def build_registry(
             session_factory=session_factory,
             event_service=event_service,
             git_repo=git_repo,
+            env_resolver=cloud_repo_service.resolve_git_env,
+            discard_hook=cloud_repo_service.reset_workspace,
         ),
         user_ai_settings_service=user_ai_settings_service,
+        cloud_repo_service=cloud_repo_service,
         push_service=push_service,
         redis=redis,
     )

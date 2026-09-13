@@ -6,6 +6,7 @@ context does not. Each engine supplies its own tail `instructions` (e.g. an
 OUTCOME sentinel convention) since that part is genuinely runtime-specific.
 """
 
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,6 +19,11 @@ from app.models.task import Task
 from app.models.task_message import TaskMessage
 from workers.common.state import ExecutionContext
 
+# Called with (user_id, workdir) right before a worker starts, once the real
+# working directory is known. The cloud runtime uses it to fetch/fast-forward
+# (or re-clone) a GitHub workspace; desktop mode passes nothing.
+PrepareWorkdir = Callable[[UUID, str], Awaitable[None]]
+
 
 class ExecutionContextBuilder:
     def __init__(
@@ -25,10 +31,12 @@ class ExecutionContextBuilder:
         default_workdir: str | None,
         session_factory: async_sessionmaker[AsyncSession],
         instructions: str,
+        prepare_workdir: PrepareWorkdir | None = None,
     ) -> None:
         self._default_workdir = default_workdir
         self._session_factory = session_factory
         self._instructions = instructions
+        self._prepare_workdir = prepare_workdir
 
     async def build(self, task_id: UUID) -> ExecutionContext:
         async with self._session_factory() as session:
@@ -64,12 +72,18 @@ class ExecutionContextBuilder:
             prompt_text = compose_prompt(
                 task, messages, context_name, branch, self._instructions
             )
-            return ExecutionContext(
-                prompt_text=prompt_text,
-                workdir=workdir,
-                context_name=context_name,
-                branch=branch,
-            )
+            user_id = task.user_id
+
+        # Outside the DB session: this may run git against the network.
+        if workdir is not None and self._prepare_workdir is not None:
+            await self._prepare_workdir(user_id, workdir)
+
+        return ExecutionContext(
+            prompt_text=prompt_text,
+            workdir=workdir,
+            context_name=context_name,
+            branch=branch,
+        )
 
 
 async def resolve_workdir(

@@ -8,10 +8,15 @@ from app.core.config import Settings
 from app.core.security import JWTManager, TokenError, hash_password, verify_password
 from app.models.session import Session
 from app.models.user import User
-from app.services.exceptions import ConflictError, LimitExceededError, UnauthorizedError
-from app.services.google_auth_service import GoogleProfile
 from app.repositories.session_repo import SessionRepository
 from app.repositories.user_repo import UserRepository
+from app.services.exceptions import (
+    ConflictError,
+    LimitExceededError,
+    NotFoundError,
+    UnauthorizedError,
+)
+from app.services.google_auth_service import GoogleProfile
 from app.utils.datetime import coerce_utc, utcnow
 
 
@@ -96,6 +101,30 @@ class AuthService:
             await session.commit()
             await session.refresh(user)
             return token, expires_at, user
+
+    async def ensure_password_account(self, email: str, password: str, name: str) -> User:
+        """Idempotently creates a password-authenticated account (used for the
+        public demo account on startup). An existing account keeps its data;
+        the password is only (re)set when the account has none yet."""
+        async with self._session_factory() as session:
+            user = await session.scalar(select(User).where(User.email == email))
+            if user is None:
+                user = User(email=email, name=name, password_hash=hash_password(password))
+                session.add(user)
+            elif not user.password_hash:
+                user.password_hash = hash_password(password)
+            await session.commit()
+            await session.refresh(user)
+            return user
+
+    async def login_as_demo(self) -> tuple[str, datetime, User]:
+        """Issues a session for the configured demo account without a password.
+        The route is rate limited like every other auth route."""
+        email = self._settings.demo_account_email
+        password = self._settings.demo_account_password
+        if not email or not password:
+            raise NotFoundError("Demo account is not enabled on this server")
+        return await self.login_with_password(email, password)
 
     async def login_with_password(
         self, email: str, password: str

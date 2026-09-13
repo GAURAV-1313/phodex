@@ -73,3 +73,22 @@ class RepoSelectResponse(BaseModel):
 
 class CurrentProjectContextResponse(BaseModel):
     project_context: ProjectContextOut | None
+
+
+class GithubConnectRequest(BaseModel):
+    """Connects a GitHub repository to the cloud runtime (clone or refresh)."""
+
+    url: str = Field(min_length=1, description="https://github.com/owner/repo or owner/repo")
+    branch: str | None = None
+    # Optional fine-grained PAT (Contents: read/write). Stored encrypted for the
+    # user and never echoed back; omit to reuse a previously stored token.
+    token: str | None = None
+
+
+class GithubCredentialsRequest(BaseModel):
+    token: str | None = None
+    clear: bool = False
+
+
+class GithubCredentialsResponse(BaseModel):
+    has_github_token: bool

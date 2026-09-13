@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
@@ -42,18 +41,45 @@ class UserAiSettingsService:
             return None
         return decrypt_secret(self._settings, settings_row.openai_api_key_encrypted)
 
+    def decrypt_github_token(self, settings_row: UserAiSettings) -> str | None:
+        if not settings_row.github_token_encrypted:
+            return None
+        return decrypt_secret(self._settings, settings_row.github_token_encrypted)
+
+    async def get_github_token(self, user_id: UUID) -> str | None:
+        row = await self.get_decrypted(user_id)
+        if row is None:
+            return None
+        return self.decrypt_github_token(row)
+
+    async def set_github_token(self, user_id: UUID, token: str | None) -> bool:
+        """Stores (or clears, when token is None) the user's GitHub token. Returns
+        whether a token is configured afterwards."""
+        async with self._session_factory() as session:
+            row = await self._user_ai_settings_repo.get_by_user_id(session, user_id)
+            if row is None:
+                row = UserAiSettings(user_id=user_id)
+                row = await self._user_ai_settings_repo.create(session, row)
+            row.github_token_encrypted = (
+                encrypt_secret(self._settings, token.strip()) if token and token.strip() else None
+            )
+            await self._user_ai_settings_repo.update(session, row)
+            return row.github_token_encrypted is not None
+
     async def get_status(self, user_id: UUID) -> dict:
         row = await self.get_decrypted(user_id)
         if row is None:
             return {
                 "has_anthropic_key": False,
                 "has_openai_key": False,
+                "has_github_token": False,
                 "preferred_claude_model": None,
                 "preferred_codex_model": None,
             }
         return {
             "has_anthropic_key": bool(row.anthropic_api_key_encrypted),
             "has_openai_key": bool(row.openai_api_key_encrypted),
+            "has_github_token": bool(row.github_token_encrypted),
             "preferred_claude_model": row.preferred_claude_model,
             "preferred_codex_model": row.preferred_codex_model,
         }

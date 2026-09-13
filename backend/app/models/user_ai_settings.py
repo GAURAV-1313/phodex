@@ -18,6 +18,7 @@ class UserAiSettings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     anthropic_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     openai_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    github_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     preferred_claude_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
     preferred_codex_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

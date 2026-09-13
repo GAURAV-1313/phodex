@@ -94,6 +94,31 @@ async def login(
     )
 
 
+@router.post("/demo", response_model=AuthTokenResponse)
+async def demo_login(
+    request: Request,
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+) -> AuthTokenResponse:
+    """Signs into the server's public demo account (404 when not configured).
+    Lets anyone try the cloud runtime without creating an account."""
+    client_host = request.client.host if request.client else "unknown"
+    allowed = await services.redis.allow(
+        f"rate:auth:{client_host}",
+        services.settings.auth_rate_limit_per_minute,
+        60,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests"
+        )
+    token, expires_at, user = await services.auth_service.login_as_demo()
+    return AuthTokenResponse(
+        access_token=token,
+        expires_at=expires_at,
+        user=UserOut.model_validate(user),
+    )
+
+
 @router.get("/me", response_model=UserOut)
 async def me(current_user: Annotated[User, Depends(get_current_user)]) -> UserOut:
     return UserOut.model_validate(current_user)

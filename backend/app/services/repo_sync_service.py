@@ -1,16 +1,15 @@
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.orm import selectinload
 
 from app.models.device import Device
 from app.models.enums import ProjectContextSourceType
 from app.models.project_context import ProjectContext
 from app.models.synced_repository import SyncedRepository
+from app.repositories.repo_repo import RepoRepository
 from app.schemas.repos import RepoSyncRequest
 from app.services.exceptions import NotFoundError
-from app.repositories.repo_repo import RepoRepository
 from app.utils.datetime import utcnow
 
 
@@ -101,16 +100,24 @@ class RepoSyncService:
             if repo is None:
                 raise NotFoundError("Repository not found")
 
+            metadata = repo.metadata_json or {}
+            is_github = metadata.get("source") == "github"
             context = ProjectContext(
                 user_id=user_id,
-                source_type=ProjectContextSourceType.LOCAL_SYNCED,
+                source_type=(
+                    ProjectContextSourceType.GITHUB
+                    if is_github
+                    else ProjectContextSourceType.LOCAL_SYNCED
+                ),
                 synced_repository_id=repo.id,
                 name=name or f"{repo.name} ({repo.current_branch or 'unknown-branch'})",
+                repo_url=str(metadata.get("url")) if is_github and metadata.get("url") else None,
                 branch=repo.current_branch,
                 metadata_json={
                     "local_path": repo.local_path,
                     "git_root": repo.git_root,
                     "device_id": str(repo.device_id),
+                    "source": "github" if is_github else "local_synced",
                 },
                 is_current=True,
             )
