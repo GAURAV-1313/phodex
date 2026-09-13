@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.approval_request import ApprovalRequest
+from app.models.enums import ApprovalStatus
 from app.models.task import Task
 
 from .base import BaseRepository
@@ -39,17 +41,17 @@ class ApprovalRepository(BaseRepository):
         return list(result.scalars().all())
 
     async def get_with_task(self, session: AsyncSession, approval_id: UUID, user_id: UUID) -> ApprovalRequest | None:
-        return await session.scalar(
+        result: ApprovalRequest | None = await session.scalar(
             select(ApprovalRequest)
             .join(Task, Task.id == ApprovalRequest.task_id)
             .where(ApprovalRequest.id == approval_id, Task.user_id == user_id)
             .with_for_update()
         )
+        return result
 
     async def update_status(
-        self, session: AsyncSession, approval: ApprovalRequest, status, resolved_at=None, note: str | None = None
+        self, session: AsyncSession, approval: ApprovalRequest, status: ApprovalStatus, resolved_at: datetime | None = None, note: str | None = None
     ) -> ApprovalRequest:
-        from app.models.enums import ApprovalStatus
 
         approval.status = status
         if resolved_at is not None:

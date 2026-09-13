@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import TaskStatus
 from app.models.task import Task
 from app.models.task_message import TaskMessage
 
@@ -20,7 +22,8 @@ class TaskRepository(BaseRepository):
         return await session.get(Task, task_id)
 
     async def get_by_id_and_user(self, session: AsyncSession, task_id: UUID, user_id: UUID) -> Task | None:
-        return await session.scalar(select(Task).where(Task.id == task_id, Task.user_id == user_id))
+        result: Task | None = await session.scalar(select(Task).where(Task.id == task_id, Task.user_id == user_id))
+        return result
 
     async def list_by_user(self, session: AsyncSession, user_id: UUID) -> list[Task]:
         result = await session.execute(
@@ -50,13 +53,13 @@ class TaskRepository(BaseRepository):
         self,
         session: AsyncSession,
         task_id: UUID,
-        status,
+        status: TaskStatus,
         current_phase: str | None = None,
         error_message: str | None = None,
         final_summary: str | None = None,
-        started_at=None,
-        finished_at=None,
-        cancelled_at=None,
+        started_at: datetime | None = None,
+        finished_at: datetime | None = None,
+        cancelled_at: datetime | None = None,
     ) -> Task | None:
         task = await session.scalar(select(Task).where(Task.id == task_id).with_for_update())
         if task is None:

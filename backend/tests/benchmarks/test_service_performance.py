@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 
 import pytest
@@ -65,7 +64,7 @@ async def test_approval_approve(client: AsyncClient, login, benchmark):
     """Benchmark approval decision."""
     headers = await login()
     r = await client.post("/tasks", json={"prompt": "test with approval"}, headers=headers)
-    task_id = r.json()["id"]
+    assert r.status_code == 201
 
     r = await client.get("/approvals/pending", headers=headers)
     approvals = r.json()["items"]

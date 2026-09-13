@@ -25,14 +25,16 @@ class RepoRepository(BaseRepository):
         return list(result.scalars().all())
 
     async def get_by_id(self, session: AsyncSession, repo_id: UUID, user_id: UUID) -> SyncedRepository | None:
-        return await session.scalar(
+        result: SyncedRepository | None = await session.scalar(
             select(SyncedRepository)
             .where(SyncedRepository.id == repo_id, SyncedRepository.user_id == user_id)
             .options(selectinload(SyncedRepository.device))
         )
+        return result
 
     async def get_by_id_no_user(self, session: AsyncSession, repo_id: UUID) -> SyncedRepository | None:
-        return await session.scalar(select(SyncedRepository).where(SyncedRepository.id == repo_id))
+        result: SyncedRepository | None = await session.scalar(select(SyncedRepository).where(SyncedRepository.id == repo_id))
+        return result
 
     async def list_by_user_and_device(
         self, session: AsyncSession, user_id: UUID, device_id: UUID
@@ -68,8 +70,9 @@ class RepoRepository(BaseRepository):
         return context
 
     async def get_current_context(self, session: AsyncSession, user_id: UUID) -> ProjectContext | None:
-        return await session.scalar(
+        context: ProjectContext | None = await session.scalar(
             select(ProjectContext)
             .where(ProjectContext.user_id == user_id, ProjectContext.is_current.is_(True))
             .order_by(ProjectContext.updated_at.desc())
         )
+        return context

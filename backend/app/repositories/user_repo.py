@@ -12,10 +12,12 @@ from .base import BaseRepository
 
 class UserRepository(BaseRepository):
     async def get_by_email(self, session: AsyncSession, email: str) -> User | None:
-        return await session.scalar(select(User).where(User.email == email))
+        result: User | None = await session.scalar(select(User).where(User.email == email))
+        return result
 
     async def get_by_google_sub(self, session: AsyncSession, google_sub: str) -> User | None:
-        return await session.scalar(select(User).where(User.google_sub == google_sub))
+        result: User | None = await session.scalar(select(User).where(User.google_sub == google_sub))
+        return result
 
     async def get_by_id(self, session: AsyncSession, user_id: UUID) -> User | None:
         return await session.get(User, user_id)

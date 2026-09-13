@@ -1,17 +1,16 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.approval_request import ApprovalRequest
 from app.models.enums import ApprovalStatus, TaskStatus
 from app.models.task import Task
+from app.repositories.approval_repo import ApprovalRepository
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, NotFoundError
 from app.services.push_service import PushService
 from app.services.redis_service import RedisService
-from app.repositories.approval_repo import ApprovalRepository
 from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:

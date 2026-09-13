@@ -4,11 +4,10 @@ import pytest
 from httpx import AsyncClient
 
 
-
 @pytest.mark.benchmark(min_rounds=10, group="load")
 async def test_concurrent_sse_5(client: AsyncClient, benchmark):
     """Test 5 simultaneous SSE connections to the same task."""
-    token = f"test-token|bench-user|bench@test.com|bench-user"
+    token = "test-token|bench-user|bench@test.com|bench-user"
     r = await client.post("/auth/google", json={"id_token": token})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
     r = await client.post("/tasks", json={"prompt": "sse stress test"}, headers=headers)
@@ -28,7 +27,7 @@ async def test_concurrent_sse_5(client: AsyncClient, benchmark):
 @pytest.mark.benchmark(min_rounds=10, group="load")
 async def test_concurrent_sse_10(client: AsyncClient, benchmark):
     """Test 10 simultaneous SSE connections to the same task."""
-    token = f"test-token|bench-user|bench@test.com|bench-user"
+    token = "test-token|bench-user|bench@test.com|bench-user"
     r = await client.post("/auth/google", json={"id_token": token})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
     r = await client.post("/tasks", json={"prompt": "sse stress test"}, headers=headers)
@@ -48,7 +47,7 @@ async def test_concurrent_sse_10(client: AsyncClient, benchmark):
 @pytest.mark.benchmark(min_rounds=10, group="load")
 async def test_concurrent_sse_20(client: AsyncClient, benchmark):
     """Test 20 simultaneous SSE connections to the same task."""
-    token = f"test-token|bench-user|bench@test.com|bench-user"
+    token = "test-token|bench-user|bench@test.com|bench-user"
     r = await client.post("/auth/google", json={"id_token": token})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
     r = await client.post("/tasks", json={"prompt": "sse stress test"}, headers=headers)
@@ -68,7 +67,7 @@ async def test_concurrent_sse_20(client: AsyncClient, benchmark):
 @pytest.mark.benchmark(min_rounds=10, group="load")
 async def test_concurrent_sse_50(client: AsyncClient, benchmark):
     """Test 50 simultaneous SSE connections to the same task."""
-    token = f"test-token|bench-user|bench@test.com|bench-user"
+    token = "test-token|bench-user|bench@test.com|bench-user"
     r = await client.post("/auth/google", json={"id_token": token})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
     r = await client.post("/tasks", json={"prompt": "sse stress test"}, headers=headers)
@@ -88,7 +87,7 @@ async def test_concurrent_sse_50(client: AsyncClient, benchmark):
 @pytest.mark.benchmark(min_rounds=10, group="load")
 async def test_concurrent_sse_different_tasks(client: AsyncClient, benchmark):
     """Test SSE connections to different tasks simultaneously."""
-    token = f"test-token|bench-user|bench@test.com|bench-user"
+    token = "test-token|bench-user|bench@test.com|bench-user"
     r = await client.post("/auth/google", json={"id_token": token})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
 

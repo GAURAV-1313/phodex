@@ -1,6 +1,5 @@
-import asyncio
 import uuid
-from collections.abc import AsyncIterator, Callable, Awaitable
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 import pytest
 from httpx import ASGITransport, AsyncClient

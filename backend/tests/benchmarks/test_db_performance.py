@@ -3,15 +3,14 @@ import uuid
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.db.base import Base
-from app.models.user import User
+from app.models.approval_request import ApprovalRequest
+from app.models.enums import ApprovalStatus, TaskMessageRole, TaskStatus
 from app.models.task import Task
 from app.models.task_event import TaskEvent
 from app.models.task_message import TaskMessage
-from app.models.approval_request import ApprovalRequest
-from app.models.enums import TaskStatus, TaskMessageRole, ApprovalStatus
+from app.models.user import User
 
 
 def _create_test_user() -> User:

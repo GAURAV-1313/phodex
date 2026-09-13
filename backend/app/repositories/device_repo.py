@@ -12,10 +12,12 @@ from .base import BaseRepository
 
 class DeviceRepository(BaseRepository):
     async def get_by_id(self, session: AsyncSession, device_id: UUID) -> Device | None:
-        return await session.scalar(select(Device).where(Device.id == device_id))
+        result: Device | None = await session.scalar(select(Device).where(Device.id == device_id))
+        return result
 
     async def get_by_id_and_user(self, session: AsyncSession, device_id: UUID, user_id: UUID) -> Device | None:
-        return await session.scalar(select(Device).where(Device.id == device_id, Device.user_id == user_id))
+        result: Device | None = await session.scalar(select(Device).where(Device.id == device_id, Device.user_id == user_id))
+        return result
 
     async def create(self, session: AsyncSession, device: Device) -> Device:
         session.add(device)
@@ -35,9 +37,10 @@ class DeviceRepository(BaseRepository):
         return list(result.scalars().all())
 
     async def get_most_recent(self, session: AsyncSession, user_id: UUID) -> Device | None:
-        return await session.scalar(
+        result: Device | None = await session.scalar(
             select(Device)
             .where(Device.user_id == user_id)
             .order_by(Device.last_seen_at.desc().nulls_last())
             .limit(1)
         )
+        return result

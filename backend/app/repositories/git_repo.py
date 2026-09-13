@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import GitOperationStatus
 from app.models.git_operation import GitOperation
 from app.models.task import Task
 
@@ -39,7 +40,7 @@ class GitOperationRepository(BaseRepository):
         self,
         session: AsyncSession,
         git_operation_id: UUID,
-        status,
+        status: GitOperationStatus,
         error_message: str | None = None,
         commit_message: str | None = None,
         pushed_branch: str | None = None,

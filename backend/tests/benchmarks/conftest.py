@@ -1,17 +1,13 @@
 import os
-import uuid
 from collections.abc import AsyncIterator
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    create_async_engine,
+)
 
 from app.db.base import Base
-from app.models.user import User
-from app.models.task import Task
-from app.models.task_event import TaskEvent
-from app.models.task_message import TaskMessage
-from app.models.approval_request import ApprovalRequest
-from app.models.enums import TaskStatus, TaskMessageRole, ApprovalStatus
 
 
 @pytest.fixture(scope="session")

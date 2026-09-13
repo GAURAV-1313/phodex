@@ -4,7 +4,6 @@ import httpx
 from fastapi.concurrency import run_in_threadpool
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.service_account import Credentials
-from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings

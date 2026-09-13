@@ -10,10 +10,10 @@ from app.models.enums import ApprovalStatus, TaskStatus
 from app.models.session import Session
 from app.models.task import Task
 from app.models.task_event import TaskEvent
-from app.services.exceptions import NotFoundError
-from app.services.redis_service import RedisService
 from app.repositories.session_repo import SessionRepository
 from app.repositories.task_repo import TaskRepository
+from app.services.exceptions import NotFoundError
+from app.services.redis_service import RedisService
 from app.utils.datetime import utcnow
 
 

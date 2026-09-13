@@ -1,12 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.device import Device
+from app.repositories.device_repo import DeviceRepository
 from app.schemas.devices import DeviceHeartbeatRequest, DeviceRegisterRequest
 from app.services.exceptions import NotFoundError
-from app.repositories.device_repo import DeviceRepository
 from app.utils.datetime import utcnow
 
 

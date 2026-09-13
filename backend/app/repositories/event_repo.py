@@ -34,5 +34,8 @@ class EventRepository(BaseRepository):
         )
         return int(max_seq or 0)
 
-    async def lock_task(self, session: AsyncSession, task_id: UUID) -> Task | None:
-        return await session.scalar(select(Task.id).where(Task.id == task_id).with_for_update())
+    async def lock_task(self, session: AsyncSession, task_id: UUID) -> UUID | None:
+        locked: UUID | None = await session.scalar(
+            select(Task.id).where(Task.id == task_id).with_for_update()
+        )
+        return locked

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
@@ -11,12 +11,12 @@ from app.models.enums import TaskMessageRole, TaskStatus
 from app.models.project_context import ProjectContext
 from app.models.task import Task
 from app.models.task_message import TaskMessage
+from app.repositories.task_repo import TaskRepository
 from app.schemas.tasks import TaskEventEnvelope, TaskIssueOut
 from app.services.event_service import EventService
 from app.services.exceptions import ConflictError, LimitExceededError, NotFoundError
 from app.services.push_service import PushService
 from app.services.redis_service import RedisService
-from app.repositories.task_repo import TaskRepository
 from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:
@@ -182,10 +182,13 @@ class TaskService:
                 raise ConflictError("Cannot cancel a finished task")
 
             now = utcnow()
-            task = await self._task_repo.update_status(
+            cancelled = await self._task_repo.update_status(
                 session, task_id, TaskStatus.CANCELLED,
                 current_phase="cancelled", cancelled_at=now, finished_at=now,
             )
+            if cancelled is None:
+                raise NotFoundError("Task not found")
+            task = cancelled
 
         await self._event_service.append_event(
             task_id, "task.cancelled", {"message": "Task cancelled by user"}
@@ -245,7 +248,7 @@ class TaskService:
                 raise NotFoundError("Task not found")
 
             now = utcnow()
-            task = await self._task_repo.update_status(
+            updated = await self._task_repo.update_status(
                 session, task_id, status,
                 current_phase=current_phase,
                 error_message=error_message,
@@ -254,6 +257,9 @@ class TaskService:
                 finished_at=now if status in {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED} else task.finished_at,
                 cancelled_at=now if status == TaskStatus.CANCELLED and task.cancelled_at is None else task.cancelled_at,
             )
+            if updated is None:
+                raise NotFoundError("Task not found")
+            task = updated
             user_id = task.user_id
             started_at = task.started_at
             finished_at = task.finished_at

@@ -1,26 +1,26 @@
 from __future__ import annotations
 
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.session import Session
+from app.utils.datetime import utcnow
 
 from .base import BaseRepository
 
 
 class SessionRepository(BaseRepository):
     async def get_by_jti(self, session: AsyncSession, jwt_jti: str) -> Session | None:
-        return await session.scalar(select(Session).where(Session.jwt_jti == jwt_jti))
+        result: Session | None = await session.scalar(select(Session).where(Session.jwt_jti == jwt_jti))
+        return result
 
     async def create(self, session: AsyncSession, session_obj: Session) -> Session:
         session.add(session_obj)
         return session_obj
 
     async def list_active(self, session: AsyncSession, user_id: UUID) -> list[Session]:
-        from app.utils.datetime import utcnow
         result = await session.scalars(
             select(Session)
             .where(
@@ -34,7 +34,7 @@ class SessionRepository(BaseRepository):
 
     async def revoke(self, session: AsyncSession, session_obj: Session) -> None:
         if session_obj.revoked_at is None:
-            session_obj.revoked_at = datetime.now(session_obj.revoked_at.type.timezone.__class__ if hasattr(session_obj.revoked_at.type, 'timezone') else None)
+            session_obj.revoked_at = utcnow()
             await session.commit()
 
     async def revoke_others(
@@ -48,7 +48,6 @@ class SessionRepository(BaseRepository):
             )
         )
         sessions = list(result.all())
-        from app.utils.datetime import utcnow
 
         now = utcnow()
         for s in sessions:

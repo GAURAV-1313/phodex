@@ -12,7 +12,8 @@ from .base import BaseRepository
 
 class PushRepository(BaseRepository):
     async def get_by_token(self, session: AsyncSession, fcm_token: str) -> PushSubscription | None:
-        return await session.scalar(select(PushSubscription).where(PushSubscription.fcm_token == fcm_token))
+        result: PushSubscription | None = await session.scalar(select(PushSubscription).where(PushSubscription.fcm_token == fcm_token))
+        return result
 
     async def register_token(self, session: AsyncSession, subscription: PushSubscription) -> PushSubscription:
         existing = await self.get_by_token(session, subscription.fcm_token)

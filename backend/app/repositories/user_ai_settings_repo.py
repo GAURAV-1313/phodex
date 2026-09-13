@@ -12,7 +12,8 @@ from .base import BaseRepository
 
 class UserAiSettingsRepository(BaseRepository):
     async def get_by_user_id(self, session: AsyncSession, user_id: UUID) -> UserAiSettings | None:
-        return await session.scalar(select(UserAiSettings).where(UserAiSettings.user_id == user_id))
+        result: UserAiSettings | None = await session.scalar(select(UserAiSettings).where(UserAiSettings.user_id == user_id))
+        return result
 
     async def create(self, session: AsyncSession, settings: UserAiSettings) -> UserAiSettings:
         session.add(settings)

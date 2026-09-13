@@ -2,10 +2,8 @@ import asyncio
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models.task import Task
 from app.models.task_event import TaskEvent
 from app.repositories.event_repo import EventRepository
 from app.schemas.tasks import TaskEventEnvelope

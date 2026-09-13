@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 if TYPE_CHECKING:
-    from app.models import Base
+    pass
 
 
 class BaseRepository:
