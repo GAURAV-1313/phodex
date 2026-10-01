@@ -21,3 +21,7 @@ node_modules/
 *.jpeg
 *.jpg
 *.png
+
+# Social/icon images must ship even though *.png is excluded above
+!og-image.png
+!apple-touch-icon.png

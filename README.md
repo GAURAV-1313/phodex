@@ -1,10 +1,24 @@
-# Phodex — AI-Powered Remote Development Platform
+# Phodex
 
-A full-stack platform that connects a Flutter mobile app to AI coding workers (Claude, Codex, or Anthropic Managed Agents) running on a developer's laptop **or on Phodex Cloud** — enabling remote, approval-gated AI-assisted git operations with the laptop closed.
+**Run Claude Code, OpenAI Codex or Anthropic Managed Agents on your repos from your phone. Open source, self-hosted. The agent waits for your approval tap before it starts, and Phodex pushes only after a second tap.**
 
-**Tech Stack:** FastAPI · Python 3.11 · PostgreSQL + AsyncPG · Redis · Firebase Cloud Messaging · Flutter/Dart · Riverpod · Alembic
+[![Backend checks](https://github.com/GAURAV-1313/phodex/actions/workflows/backend.yml/badge.svg)](https://github.com/GAURAV-1313/phodex/actions/workflows/backend.yml)
+[![Mobile checks](https://github.com/GAURAV-1313/phodex/actions/workflows/mobile.yml/badge.svg)](https://github.com/GAURAV-1313/phodex/actions/workflows/mobile.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-5B4FE8.svg)](LICENSE)
 
-[Landing Page](https://phodex-amber.vercel.app) · [GitHub](https://github.com/GAURAV-1313/phodex)
+[**phodex.nofriction.space**](https://phodex.nofriction.space) · Built by [Gaurav Singh](https://github.com/GAURAV-1313) · a solo portfolio project, not a company
+
+Phodex is an open-source (MIT), self-hostable mobile app (Flutter) and backend (FastAPI) that lets a developer send coding tasks to AI coding agents — the Claude Code CLI, the OpenAI Codex CLI, or Anthropic Managed Agents — from a phone and watch them run live over Server-Sent Events. The agent is launched only after a tap on the phone, and Phodex commits and pushes the result only after a second tap. The backend runs on your own laptop (paired by QR code over Wi-Fi or Tailscale) or on a server you deploy, where it clones GitHub repositories into per-user workspaces.
+
+<p align="center">
+  <img src="screenshots/phodex-04-create-tasks.webp" width="230" alt="Home screen with the task composer and repository pill">
+  <img src="screenshots/phodex-05-live-execution.webp" width="230" alt="Session screen streaming the agent's execution trace">
+  <img src="screenshots/phodex-06-approval-gate.webp" width="230" alt="Approvals screen with Approve and Reject buttons">
+</p>
+
+**Tech Stack:** FastAPI · Python 3.11 · PostgreSQL + AsyncPG · Redis · Server-Sent Events · Firebase Cloud Messaging · Flutter/Dart · Riverpod · Alembic
+
+**Status:** the code is public and CI is green. No public backend is hosted (deploy your own with the included Dockerfile and `fly.toml`), the app is not in an app store (build it with `flutter run`; a UI-only mock mode needs no backend), and push notifications and Google sign-in need your own Firebase project and OAuth client IDs.
 
 ---
 
@@ -29,7 +43,7 @@ Runtime modes:
 
 ### ☁️ Two runtimes, one app
 - **Desktop runtime** — the original local-first design: the backend runs on the laptop, tasks operate on repositories already on disk, git reuses the machine's credentials
-- **Phodex Cloud** — `RUNTIME_MODE=cloud` runs the same backend on a server: `POST /repos/github/connect` clones any GitHub repository into a per-user workspace, the server registers itself as a synthetic "Phodex Cloud" device, pushes use an encrypted per-user GitHub token, and a public demo account (`POST /auth/demo`) lets anyone try it with zero setup
+- **Phodex Cloud** — `RUNTIME_MODE=cloud` runs the same backend on a server: `POST /repos/github/connect` clones any GitHub repository into a per-user workspace, the server registers itself as a synthetic "Phodex Cloud" device, pushes use an encrypted per-user GitHub token, and an optional demo account (`POST /auth/demo`) exists only when the operator configures one
 - **Deployable** — Dockerfile with git + the Claude Code CLI, `fly.toml`, a CI deploy job, and a smoke test script (`backend/scripts/smoke_test_cloud_runtime.sh`)
 
 ### 🤖 Multi-Worker AI Orchestration
@@ -41,7 +55,7 @@ Runtime modes:
 
 ### 🔐 Human-in-the-Loop Approval System
 - **Git operation gating** — every commit requires explicit mobile approval before applying to the working tree
-- **Prepare → Confirm/Discard workflow** — full diff visibility with `GitOperation` model tracking status
+- **Prepare → Confirm/Discard workflow** — the changed-file list from `git status` plus a diff summary, with a `GitOperation` model tracking status
 - **Approval request model** — tracks status, kind, description, and associated task
 - **Pending approvals queue** — real-time sync via SSE event stream
 
@@ -164,8 +178,8 @@ backend/
 │   ├── models/         # 14 SQLAlchemy models
 │   ├── schemas/        # Pydantic DTOs
 │   ├── services/       # 16 service modules
-│   └── workers/
-│       ├── claude/     # Claude Code CLI adapter (engine + process runner + parser)
+├── workers/
+│   ├── claude/     # Claude Code CLI adapter (engine + process runner + parser)
 │       ├── codex/      # Codex runtime adapter (engine + process runner + parser)
 │       ├── managed/    # Anthropic Managed Agents adapter (session runner)
 │       ├── common/     # Orchestrator, state machine, subprocess I/O, context builder
@@ -186,3 +200,7 @@ mobile/
 ---
 
 *Built as a production-grade full-stack platform with async-first backend design, pluggable AI worker architecture, and human-in-the-loop safety controls.*
+
+## License
+
+MIT — see [LICENSE](LICENSE). Built by [Gaurav Singh](https://github.com/GAURAV-1313).

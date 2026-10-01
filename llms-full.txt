@@ -1,0 +1,63 @@
+# Phodex
+
+Phodex is an open-source, self-hostable mobile app and backend for running AI coding agents from a phone with a human approval gate. A developer describes a task in the Flutter app, the FastAPI backend runs it through Claude Code, OpenAI Codex, or Anthropic Managed Agents, live events stream to the phone over Server-Sent Events, and Phodex's own commit-and-push step runs only after the developer confirms on the phone. The source code is public at https://github.com/GAURAV-1313/phodex (MIT License). Phodex is a solo portfolio project by Gaurav Singh (GitHub: GAURAV-1313). It is not a company and has no pricing, customers, or team.
+
+## Architecture
+
+- Mobile app: Flutter and Dart with Riverpod state management. Network and mock repository pairs allow a UI-only mode without a backend (--dart-define=PHODEX_USE_NETWORK=false).
+- Backend: FastAPI on Python 3.11, SQLAlchemy 2.x async, PostgreSQL via asyncpg, Alembic migrations, Pydantic v2, Redis. The backend exposes REST endpoints for auth, tasks, approvals, repositories, git operations, account, devices, push, AI settings, runtime, health, and pairing.
+- Event streaming: GET /tasks/{id}/stream is a Server-Sent Events endpoint. Events are persisted in PostgreSQL and replayable from a sequence cursor; live events fan out through Redis Pub/Sub.
+- Push notifications: Firebase Cloud Messaging HTTP v1 for approval-needed, completed, and failed events, sent only when the operator configures FIREBASE_SERVICE_ACCOUNT_JSON and FIREBASE_PROJECT_ID; otherwise the backend skips sending.
+- Security and observability: bcrypt password hashing, JWT sessions with revocation, Fernet encryption for stored AI provider keys and GitHub tokens, Redis-backed rate limits, all queries scoped to the authenticated user; Prometheus metrics, OpenTelemetry traces to Jaeger, /health/live and /health/ready probes.
+
+## Worker engines
+
+Every engine implements one WorkerEngine interface with four calls: dispatch_task, handle_approval, handle_user_reply, cancel_task. The engine is selected per deployment with the WORKER_ENGINE environment variable; it is not chosen per task from the phone.
+
+- claude: spawns the Claude Code CLI as a subprocess (claude -p <prompt> --output-format stream-json --verbose --permission-mode bypassPermissions by default) and parses its JSON-lines output into task.log events (assistant text and tool-use summaries).
+- codex: spawns the OpenAI Codex CLI (codex exec --json) in a workspace-write sandbox. The cloud Docker image installs only the Claude Code CLI; Codex must be added to the image to use it in cloud mode.
+- managed: uses Anthropic Managed Agents, a beta API, in the cloud runtime only. Anthropic hosts the agent loop and a per-session sandbox. Phodex sends the user's GitHub token (or GITHUB_DEFAULT_TOKEN) to Anthropic's API as the repository's authorization token; by Anthropic's design their git proxy uses it to mount the repo rather than placing the token inside the sandbox. Phodex maps session events to tasks, messages, and approvals. The engine needs MANAGED_AGENT_ID and MANAGED_ENVIRONMENT_ID from a one-time setup script. The adapter has so far been exercised against a scripted fake client; a first real run should be watched in the Anthropic Console.
+- fake: a test stub.
+
+## Approval model
+
+With the claude and codex engines there are two gates, both resolved by a tap on the phone. After the first gate the CLI runs unattended (CLAUDE_PERMISSION_MODE=bypassPermissions by default) and the task prompt does not forbid it from running git commands itself. With the Managed Agents engine, the agent is instructed to commit and push from Anthropic's sandbox; every bash command it runs is a separate phone approval (the bash tool is set to always_ask), and the Prepare/Confirm step below does not apply to it.
+
+1. Execution approval. With CLAUDE_REQUIRE_INITIAL_APPROVAL or CODEX_REQUIRE_INITIAL_APPROVAL set to true (the default, and the setting in the Fly.io config), the task waits in waiting_approval before any CLI process starts. The approval card shows the command line the backend will run (prompt elided), the working directory, and an operator-configured risk label (not a computed assessment). An approval left unanswered for the engine's timeout (CLAUDE_TIMEOUT_SECONDS, CODEX_TIMEOUT_SECONDS or MANAGED_TIMEOUT_SECONDS, default 30 minutes) fails the task with error code APPROVAL_TIMEOUT. Phodex does not forward Claude Code's own permission prompts to the phone.
+2. Commit-and-push confirmation. After a task, the "Commit & push to GitHub" sheet shows the output of git status --porcelain: the list of changed files, not a line-level diff (the backend also captures git diff --stat, but the app does not currently render it). Commit & push commits (default message "Phodex: <task title>") and pushes (git add -A, git commit, git push -u origin HEAD). Discard marks the operation rejected without committing; in desktop mode the working tree is left as-is for local inspection, and in cloud mode the workspace is reset.
+
+The developer can reply to a running task and can cancel it while it is running or waiting for approval.
+
+## Runtimes
+
+Desktop runtime: the backend runs on the developer's laptop. backend/scripts/device_agent.py registers the laptop as a device and syncs git repository metadata only, so the phone has no shell or file access. The phone pairs by scanning a QR code at /pair, over the same Wi-Fi or over Tailscale, ngrok, or Cloudflare Tunnel via PUBLIC_BASE_URL. The worker inherits the laptop's existing claude or codex login, and git push reuses the laptop's own credentials. No git credential leaves the machine and no Phodex-side server ever sees one; the CLI's own login talks to its vendor (Anthropic or OpenAI) as usual.
+
+Cloud runtime: RUNTIME_MODE=cloud runs the same backend on a server the operator deploys. POST /repos/github/connect clones a GitHub repository into WORKSPACES_ROOT/<user>/<owner>__<repo>; the server registers itself as a synthetic "Phodex Cloud" device; pushes use the user's encrypted GitHub token or GITHUB_DEFAULT_TOKEN through an inline credential helper, scrubbed from logs. A Dockerfile (git, Node 22, the Claude Code CLI, non-root user), fly.toml, a CI deploy job (skipped until a FLY_API_TOKEN secret exists), and a smoke test script are included; the docs describe Fly.io with Neon PostgreSQL and Upstash Redis, or Railway. The mobile app targets the cloud URL compiled in at build time with --dart-define=PHODEX_CLOUD_URL; the built-in default, phodex-cloud.fly.dev, is not deployed. An optional demo account (POST /auth/demo, enabled only when DEMO_ACCOUNT_EMAIL and DEMO_ACCOUNT_PASSWORD are set) can connect only repositories listed in DEMO_REPO_ALLOWLIST; the included Fly.io config and .env.cloud.example set MAX_CONCURRENT_TASKS_PER_USER=1 for every user (the setting defaults to 0, no limit).
+
+## Mobile app
+
+Onboarding: Welcome, runtime choice, QR pairing with manual fallback, sign-in (Google with the operator's own OAuth client IDs, or demo when the server exposes it), first repository, notifications. Task statuses: queued, starting, running, waiting_approval, completed, failed, cancelled. The Session screen shows a timeline of messages, tool calls, and terminal output, an approval card, a stop button, and the Commit & push sheet. The account screen's "Current plan" label distinguishes a personal workspace from a managed one; it is not a billing tier.
+
+## Limitations
+
+- Line-level diffs are not shown on the phone; only the git status file list.
+- With the claude and codex engines, only the launch and Phodex's own commit-and-push are gated; the CLI runs unattended in between. Per-command approval exists only with the Managed Agents engine.
+- Managed Agents is a beta API and cloud-runtime only; the integration is tested against a scripted fake client.
+- Push notifications and Google sign-in are no-ops until the operator supplies Firebase and Google OAuth configuration.
+
+## Current status
+
+- The code is public on GitHub. Backend CI runs ruff, mypy, and pytest; mobile CI runs format, analyze, a design-token lint, and flutter test.
+- The cloud runtime is coded but not deployed anywhere. There is no public Phodex backend and no live demo account.
+- The mobile app is not in the App Store or Google Play and has no TestFlight build. It is built from source with flutter run. A web build in mock mode is possible but not published.
+- Push notifications need the operator's own Firebase project; without it the Notifications screen says "not set up on this build yet" and the backend skips sending. Google sign-in needs the operator's own Google OAuth client IDs; without them it will not succeed.
+- The code is open source under the MIT License.
+- The only live surface is the landing page at https://phodex.nofriction.space.
+
+## Links
+
+- Repository: https://github.com/GAURAV-1313/phodex
+- Landing page: https://phodex.nofriction.space
+- Cloud runtime guide: https://github.com/GAURAV-1313/phodex/blob/main/backend/docs/cloud-runtime.md
+- Backend README: https://github.com/GAURAV-1313/phodex/blob/main/backend/README.md
+- Mobile README: https://github.com/GAURAV-1313/phodex/blob/main/mobile/README.md

@@ -1,0 +1,24 @@
+# Phodex
+
+> Phodex is a open-source, self-hostable mobile app (Flutter) and backend (FastAPI) for running AI coding agents — Claude Code, OpenAI Codex, or Anthropic Managed Agents — from a phone. The agent is launched only after an approval tap on the phone, and Phodex's own commit-and-push step is held behind a second confirmation tap. Open source under the MIT License on GitHub. Solo portfolio project by Gaurav Singh.
+
+Phodex has two runtimes. Desktop: the backend runs on the developer's laptop, the phone pairs over a QR code, and git credentials never leave the machine. Cloud: the same backend runs on a server the operator deploys and clones GitHub repositories itself. Live task events stream over Server-Sent Events. Status: the code is public, but no public backend is deployed, the app is not in any app store, and the code is MIT-licensed.
+
+## Primary
+
+- [Landing page](https://phodex.nofriction.space): one-page overview with app screenshots (mock-mode sample data)
+- [GitHub repository](https://github.com/GAURAV-1313/phodex): full source for the Flutter app and FastAPI backend
+- [Full description for LLMs](https://phodex.nofriction.space/llms-full.txt): architecture, engines, approval model, runtimes, current status
+
+## Docs
+
+- [Project README](https://github.com/GAURAV-1313/phodex/blob/main/README.md): features, API surface, data models, architecture decisions
+- [Backend README](https://github.com/GAURAV-1313/phodex/blob/main/backend/README.md): local setup, worker engine selection, QR pairing, Tailscale, Google sign-in and push notification setup
+- [Cloud runtime](https://github.com/GAURAV-1313/phodex/blob/main/backend/docs/cloud-runtime.md): RUNTIME_MODE=cloud, Fly.io deployment, demo account, Managed Agents engine
+- [Mobile README](https://github.com/GAURAV-1313/phodex/blob/main/mobile/README.md): building the Flutter app, UI-only mode, runtimes
+- [Mobile UI spec](https://github.com/GAURAV-1313/phodex/blob/main/docs/mobile-codex-ui-spec.md): screens, onboarding flow, design tokens
+
+## Optional
+
+- [Deploy checklist](https://github.com/GAURAV-1313/phodex/blob/main/backend/docs/deploy-checklist.md): server deployment steps for the Codex worker
+- [Local laptop testing](https://github.com/GAURAV-1313/phodex/blob/main/backend/docs/local-laptop-testing.md): running a real worker on the laptop before deployment

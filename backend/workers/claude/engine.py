@@ -51,7 +51,8 @@ class ClaudeWorkerEngine(SubprocessWorkerOrchestrator):
             session_factory=session_factory,
             instructions=(
                 "Return concise operational logs. Do not include private chain-of-thought. "
-                "If you edit files, include file-change summaries."
+                "If you edit files, include file-change summaries. "
+                "Do not run git commit or git push yourself; Phodex commits and pushes only after the user approves on their phone."
             ),
             prepare_workdir=(
                 cloud_repo_service.prepare_for_task if cloud_repo_service is not None else None

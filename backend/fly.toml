@@ -27,7 +27,7 @@ primary_region = "iad"
   MAX_ACTIVE_SESSIONS_PER_USER = "10"
   ALLOW_INSECURE_TEST_TOKENS = "false"
   PUBLIC_BASE_URL = "https://phodex-cloud.fly.dev"
-  ALLOWED_ORIGINS = "https://phodex-amber.vercel.app"
+  ALLOWED_ORIGINS = "https://phodex.nofriction.space"
   METRICS_ENABLED = "true"
   LOG_LEVEL = "INFO"
 
