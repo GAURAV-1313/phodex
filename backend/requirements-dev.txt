@@ -5,3 +5,4 @@ aiosqlite==0.21.0
 ruff==0.12.10
 mypy==1.17.1
 fakeredis==2.26.2
+pytest-benchmark==5.3.0

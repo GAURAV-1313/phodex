@@ -18,7 +18,7 @@ Phodex is an open-source (MIT), self-hostable mobile app (Flutter) and backend (
 
 **Tech Stack:** FastAPI · Python 3.11 · PostgreSQL + AsyncPG · Redis · Server-Sent Events · Firebase Cloud Messaging · Flutter/Dart · Riverpod · Alembic
 
-**Status:** the code is public and CI is green. No public backend is hosted (deploy your own with the included Dockerfile and `fly.toml`), the app is not in an app store (build it with `flutter run`; a UI-only mock mode needs no backend), and push notifications and Google sign-in need your own Firebase project and OAuth client IDs.
+**Status:** the code is public. No public backend is hosted (deploy your own with the included Dockerfile and `fly.toml`), the app is not in an app store (build it with `flutter run`; a UI-only mock mode needs no backend), and push notifications and Google sign-in need your own Firebase project and OAuth client IDs.
 
 ---
 
@@ -54,8 +54,8 @@ Runtime modes:
 - **Typed output parsers** — extract assistant messages, tool use, final summaries, and error states from JSON-lines output
 
 ### 🔐 Human-in-the-Loop Approval System
-- **Git operation gating** — every commit requires explicit mobile approval before applying to the working tree
-- **Prepare → Confirm/Discard workflow** — the changed-file list from `git status` plus a diff summary, with a `GitOperation` model tracking status
+- **Git operation gating** — every Phodex commit-and-push requires a tap on the phone; the agent's own edits land in the working tree unattended
+- **Prepare → Confirm/Discard workflow** — the changed-file list from `git status` (a `diff --stat` is stored but not yet shown in the app), with a `GitOperation` model tracking status
 - **Approval request model** — tracks status, kind, description, and associated task
 - **Pending approvals queue** — real-time sync via SSE event stream
 
@@ -160,8 +160,8 @@ All models use `UUIDPrimaryKeyMixin` and `TimestampMixin` for consistent ID gene
 ## Architecture Decisions
 
 1. **Service Registry over per-route DI** — single resolution point prevents dependency drift across 34 endpoints
-2. **Worker adapter pattern** — Claude and Codex share `WorkerEngine` interface; new AI providers require zero backend changes
-3. **Approval gate before git apply** — safety-first design; workers suggest, humans decide
+2. **Worker adapter pattern** — Claude and Codex share `WorkerEngine` interface; a new AI provider needs only a new adapter under `backend/workers/`
+3. **Approval gate before launch and before Phodex pushes** — the agent does not start until you tap, and Phodex commits and pushes only after a second tap
 4. **SSE over WebSockets** — simpler server model, unidirectional event flow, native browser support
 5. **Repository pattern on mobile** — identical domain models whether using network or mock store; enables offline-first testing
 

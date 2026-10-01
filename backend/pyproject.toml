@@ -7,6 +7,7 @@ select = ["E", "F", "I", "B", "UP", "N", "ASYNC", "RUF"]
 ignore = ["E501"]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --benchmark-min-rounds=50 --benchmark-sort=mean"
