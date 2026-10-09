@@ -362,6 +362,9 @@ class _ExecutionViewState extends State<_ExecutionView> {
       }
     }
     final complete = task.status.isTerminal;
+    final stoppedMessage = task.currentPhase == 'interrupted'
+        ? 'Phodex stopped mid-task. Its changes are still in your repo.'
+        : 'This task stopped before it finished.';
 
     // The worker's phase ("booting worker", "analyzing context") adds detail
     // beyond the status chip — but only while live, and only when it says
@@ -423,11 +426,7 @@ class _ExecutionViewState extends State<_ExecutionView> {
           StatusBanner(
             tone: StatusTone.warning,
             busy: _resuming,
-            message: task.currentPhase == 'interrupted'
-                ? 'Phodex stopped while this task was running. Its changes are '
-                      'still in your working tree.'
-                : 'This task stopped before it finished. Resume to let the '
-                      'agent pick up where it left off.',
+            message: stoppedMessage,
             actionLabel: _resuming ? null : 'Resume',
             onAction: _resuming ? null : _resume,
           ),
