@@ -69,9 +69,11 @@ class ExecutionContextBuilder:
                     branch = context.branch
                     workdir = await resolve_workdir(session, context, self._default_workdir)
 
+            is_resume = (task.resume_count or 0) > 0
             prompt_text = compose_prompt(
-                task, messages, context_name, branch, self._instructions
+                task, messages, context_name, branch, self._instructions, is_resume=is_resume
             )
+            resume_session_id = task.runtime_session_id if is_resume else None
             user_id = task.user_id
 
         # Outside the DB session: this may run git against the network.
@@ -83,6 +85,8 @@ class ExecutionContextBuilder:
             workdir=workdir,
             context_name=context_name,
             branch=branch,
+            is_resume=is_resume,
+            resume_session_id=resume_session_id,
         )
 
 
@@ -112,17 +116,37 @@ async def resolve_workdir(
     return default_workdir
 
 
+RESUME_NOTE = (
+    "This task was interrupted before it finished and the user has asked you to resume it. "
+    "Earlier work may already be in the working tree: check `git status` and `git diff` first, "
+    "keep the changes that are correct, and continue from where the work stopped instead of "
+    "starting over."
+)
+
+# Sent to an agent that is reattached to its previous conversation, so it
+# already has the original request and its own progress in context.
+RESUME_CONTINUATION_PROMPT = (
+    "You were interrupted before finishing (the machine running you stopped). "
+    "Check `git status` and `git diff` to see what is already done, then continue the task "
+    "from where you left off. Do not run git commit or git push yourself."
+)
+
+
 def compose_prompt(
     task: Task,
     messages: list[TaskMessage],
     context_name: str | None,
     branch: str | None,
     instructions: str,
+    *,
+    is_resume: bool = False,
 ) -> str:
     lines: list[str] = [
         "You are executing a coding task on behalf of a remote mobile client.",
         f"Primary request: {task.prompt}",
     ]
+    if is_resume:
+        lines.append(RESUME_NOTE)
 
     if context_name:
         lines.append(f"Project context: {context_name}")

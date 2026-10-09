@@ -190,6 +190,13 @@ class SessionController extends StateNotifier<AsyncValue<SessionUiState>> {
     await _ref.read(homeTasksProvider.notifier).refresh();
   }
 
+  Future<void> resumeTask() async {
+    final taskRepository = _ref.read(taskRepositoryProvider);
+    await taskRepository.resumeTask(_taskId);
+    await refresh();
+    await _ref.read(homeTasksProvider.notifier).refresh();
+  }
+
   Future<void> approve(String approvalId) async {
     final current = state.asData?.value;
     if (current == null) {

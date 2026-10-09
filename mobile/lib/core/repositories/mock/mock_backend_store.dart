@@ -235,6 +235,40 @@ class MockBackendStore {
     return _tasks[taskId]!;
   }
 
+  TaskSummary resumeTask(String taskId) {
+    final task = _tasks[taskId];
+    if (task == null) {
+      throw StateError('Task not found');
+    }
+    if (task.status != TaskStatus.failed &&
+        task.status != TaskStatus.cancelled) {
+      return task;
+    }
+    final now = DateTime.now().toUtc();
+    _tasks[taskId] = TaskSummary(
+      id: task.id,
+      userId: task.userId,
+      projectContextId: task.projectContextId,
+      title: task.title,
+      prompt: task.prompt,
+      status: TaskStatus.queued,
+      currentPhase: 'resume_queued',
+      createdAt: task.createdAt,
+      updatedAt: now,
+      startedAt: task.startedAt,
+      finalSummary: task.finalSummary,
+    );
+    _emitEvent(
+      taskId: taskId,
+      type: 'task.resumed',
+      data: {'message': 'Task resumed from phone'},
+    );
+    if (_enableDynamicSimulation) {
+      _simulateTaskFlow(taskId);
+    }
+    return _tasks[taskId]!;
+  }
+
   TaskSummary cancelTask(String taskId) {
     final task = _tasks[taskId];
     if (task == null) {

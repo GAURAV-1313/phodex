@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import Settings
 from app.core.metrics import TASK_DURATION, TASK_TRANSITIONS
 from app.models.approval_request import ApprovalRequest
-from app.models.enums import TaskMessageRole, TaskStatus
+from app.models.enums import ApprovalStatus, TaskMessageRole, TaskStatus
 from app.models.project_context import ProjectContext
 from app.models.task import Task
 from app.models.task_message import TaskMessage
@@ -21,6 +21,14 @@ from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:
     from app.services.worker_dispatcher import WorkerDispatcher
+
+ACTIVE_STATUSES = (
+    TaskStatus.QUEUED,
+    TaskStatus.STARTING,
+    TaskStatus.RUNNING,
+    TaskStatus.WAITING_APPROVAL,
+)
+RESUMABLE_STATUSES = frozenset({TaskStatus.FAILED, TaskStatus.CANCELLED})
 
 
 class TaskService:
@@ -198,6 +206,131 @@ class TaskService:
         if self._worker_dispatcher is not None:
             await self._worker_dispatcher.cancel_task(task_id)
         return task
+
+    async def resume_task(self, user_id: UUID, task_id: UUID) -> Task:
+        """Re-queues a stopped task so the worker continues where it left off.
+
+        Only tasks that stopped without finishing (failed, cancelled, or
+        interrupted by a backend restart) can be resumed. The agent's edits
+        are still in the working tree, and if the runtime reported a session
+        id, the worker reattaches to that same agent conversation.
+        """
+        async with self._session_factory() as session:
+            task = await self._task_repo.get_by_id_and_user(session, task_id, user_id)
+            if task is None:
+                raise NotFoundError("Task not found")
+            if task.status not in RESUMABLE_STATUSES:
+                raise ConflictError(
+                    "Only failed, cancelled or interrupted tasks can be resumed"
+                )
+
+            max_concurrent = self._settings.max_concurrent_tasks_per_user
+            if max_concurrent > 0:
+                running_count = await self._task_repo.count_concurrent(
+                    session, user_id, [s.value for s in ACTIVE_STATUSES]
+                )
+                if int(running_count or 0) >= max_concurrent:
+                    raise LimitExceededError(
+                        "Concurrent task limit reached",
+                        code="CONCURRENT_TASK_LIMIT_REACHED",
+                    )
+
+            locked = await session.scalar(
+                select(Task).where(Task.id == task_id).with_for_update()
+            )
+            assert locked is not None
+            locked.status = TaskStatus.QUEUED
+            locked.current_phase = "resume_queued"
+            locked.error_message = None
+            locked.finished_at = None
+            locked.cancelled_at = None
+            locked.resume_count = (locked.resume_count or 0) + 1
+            await session.commit()
+            await session.refresh(locked)
+            task = locked
+
+        await self._event_service.append_event(
+            task_id,
+            "task.resumed",
+            {
+                "message": "Task resumed from phone",
+                "resume_count": task.resume_count,
+                "continues_agent_session": task.runtime_session_id is not None,
+            },
+        )
+        TASK_TRANSITIONS.labels(status=TaskStatus.QUEUED.value).inc()
+        await self._invalidate_usage(task.user_id)
+
+        if self._worker_dispatcher is not None:
+            await self._worker_dispatcher.dispatch_task(task_id)
+        return task
+
+    async def recover_interrupted_tasks(self) -> int:
+        """Marks tasks left active by a previous process as interrupted.
+
+        Worker state lives in this process's memory, so when the backend dies
+        (laptop battery, crash, deploy), any task it was running is orphaned:
+        the row still says running but nothing is behind it. On startup we
+        fail those tasks with a retryable WORKER_INTERRUPTED error so the
+        phone shows them as stopped and offers Resume.
+        """
+        async with self._session_factory() as session:
+            orphaned = list(
+                (
+                    await session.execute(
+                        select(Task).where(
+                            Task.status.in_([s.value for s in ACTIVE_STATUSES])
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            now = utcnow()
+            for task in orphaned:
+                task.status = TaskStatus.FAILED
+                task.current_phase = "interrupted"
+                task.error_message = "Phodex stopped while this task was running"
+                task.finished_at = now
+            pending = list(
+                (
+                    await session.execute(
+                        select(ApprovalRequest).where(
+                            ApprovalRequest.task_id.in_([t.id for t in orphaned]),
+                            ApprovalRequest.status == ApprovalStatus.PENDING,
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            ) if orphaned else []
+            for approval in pending:
+                approval.status = ApprovalStatus.EXPIRED
+            await session.commit()
+            recovered = [(t.id, t.user_id) for t in orphaned]
+
+        for task_id, user_id in recovered:
+            await self._event_service.append_event(
+                task_id,
+                "task.failed",
+                {
+                    "message": "Phodex stopped while this task was running. Tap Resume to continue.",
+                    "error_code": "WORKER_INTERRUPTED",
+                    "is_retryable": True,
+                    "is_resumable": True,
+                },
+            )
+            TASK_TRANSITIONS.labels(status=TaskStatus.FAILED.value).inc()
+            await self._invalidate_usage(user_id)
+        return len(recovered)
+
+    async def set_runtime_session_id(self, task_id: UUID, session_id: str) -> None:
+        async with self._session_factory() as session:
+            task = await self._task_repo.get_by_id(session, task_id)
+            if task is None or task.runtime_session_id == session_id:
+                return
+            task.runtime_session_id = session_id
+            await session.commit()
 
     async def list_messages(self, user_id: UUID, task_id: UUID) -> list[TaskMessage]:
         await self.get_task(user_id, task_id)

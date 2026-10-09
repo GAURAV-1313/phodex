@@ -105,6 +105,16 @@ async def cancel_task(
     return TaskOut.model_validate(task)
 
 
+@router.post("/{task_id}/resume", response_model=TaskOut)
+async def resume_task(
+    task_id: UUID,
+    services: Annotated[ServiceRegistry, Depends(get_services)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> TaskOut:
+    task = await services.task_service.resume_task(current_user.id, task_id)
+    return TaskOut.model_validate(task)
+
+
 @router.get("/{task_id}/messages", response_model=TaskMessagesResponse)
 async def list_messages(
     task_id: UUID,

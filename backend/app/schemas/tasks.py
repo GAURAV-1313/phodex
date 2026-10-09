@@ -50,6 +50,8 @@ class TaskOut(ORMModel):
     error_message: str | None
     final_summary: str | None
     cancelled_at: datetime | None
+    runtime_session_id: str | None = None
+    resume_count: int = 0
 
 
 class TaskListResponse(BaseModel):

@@ -18,11 +18,13 @@ from workers.claude.output_parser import (
     extract_assistant_text,
     extract_result_subtype,
     extract_result_summary,
+    extract_session_id,
     extract_tool_use_summaries,
     is_error_result,
     is_result_event,
     is_system_init,
 )
+from workers.common.context import RESUME_CONTINUATION_PROMPT
 from workers.common.state import ExecutionContext, RuntimeState
 from workers.common.subprocess_io import ManagedSubprocess
 
@@ -44,9 +46,13 @@ class ProcessRunner:
         self._lock = lock
         self._user_ai_settings_service = user_ai_settings_service
 
-    def _base_args(self, prompt: str, model: str | None) -> list[str]:
-        args = [
-            self._settings.claude_command,
+    def _base_args(
+        self, prompt: str, model: str | None, resume_session_id: str | None = None
+    ) -> list[str]:
+        args = [self._settings.claude_command]
+        if resume_session_id:
+            args += ["--resume", resume_session_id]
+        args += [
             "-p",
             prompt,
             "--output-format",
@@ -82,7 +88,14 @@ class ProcessRunner:
 
     async def run(self, task_id: UUID, state: RuntimeState, context: ExecutionContext) -> None:
         env, model = await self._resolve_overrides(task_id)
-        command = self._base_args(context.prompt_text, model)
+        if context.resume_session_id:
+            # Reattach to the interrupted conversation: the agent already has
+            # the original request and its own progress, so just tell it to go on.
+            command = self._base_args(
+                RESUME_CONTINUATION_PROMPT, model, context.resume_session_id
+            )
+        else:
+            command = self._base_args(context.prompt_text, model)
         if not command or not command[0]:
             raise RuntimeError("CLAUDE_COMMAND is empty")
 
@@ -104,7 +117,11 @@ class ProcessRunner:
             task_id,
             "task.log",
             {
-                "message": "Launching Claude runtime process",
+                "message": (
+                    f"Resuming Claude session {context.resume_session_id}"
+                    if context.resume_session_id
+                    else "Launching Claude runtime process"
+                ),
                 "command": self.command_preview(),
                 "workdir": cwd,
             },
@@ -249,6 +266,11 @@ class ProcessRunner:
                 task_id, "task.log", {"message": str(payload), "source": source}
             )
             return
+
+        session_id = extract_session_id(payload)
+        if session_id and session_id != state.runtime_session_id:
+            state.runtime_session_id = session_id
+            await self._task_service.set_runtime_session_id(task_id, session_id)
 
         if is_system_init(payload):
             await self._event_service.append_event(

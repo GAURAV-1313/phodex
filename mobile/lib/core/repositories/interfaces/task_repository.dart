@@ -22,4 +22,8 @@ abstract class TaskRepository {
   });
 
   Future<TaskSummary> cancelTask(String taskId);
+
+  /// Re-queues a failed, cancelled or interrupted task so the agent continues
+  /// from where it stopped.
+  Future<TaskSummary> resumeTask(String taskId);
 }
