@@ -14,6 +14,12 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<TaskSummary> resumeTask(String taskId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return _store.resumeTask(taskId);
+  }
+
+  @override
   Future<TaskSummary> createTask({
     required String prompt,
     String? projectContextId,

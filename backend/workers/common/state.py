@@ -9,6 +9,10 @@ class ExecutionContext:
     workdir: str | None
     context_name: str | None
     branch: str | None
+    # Set when the user tapped Resume on a stopped task.
+    is_resume: bool = False
+    # Agent conversation to reattach to (Claude `--resume <id>`), if known.
+    resume_session_id: str | None = None
 
 
 @dataclass
@@ -23,3 +27,4 @@ class RuntimeState:
     final_summary: str | None = None
     stderr_tail: list[str] = field(default_factory=list)
     runtime_reported_error: bool = False
+    runtime_session_id: str | None = None

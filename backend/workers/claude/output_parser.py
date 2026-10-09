@@ -77,3 +77,11 @@ def extract_result_subtype(payload: dict) -> str | None:
     if isinstance(value, str) and value.strip():
         return value.strip()
     return None
+
+
+def extract_session_id(payload: dict) -> str | None:
+    """Claude Code tags every stream-json event with the conversation's `session_id`."""
+    value = payload.get("session_id")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None

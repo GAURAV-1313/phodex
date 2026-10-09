@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, Uuid
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -34,6 +34,13 @@ class Task(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     final_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Agent-side conversation id (e.g. the Claude Code `session_id` from its
+    # stream-json init event). Lets a resumed run continue the same agent
+    # conversation via `claude --resume <id>` instead of starting cold.
+    runtime_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # How many times the user has resumed this task after it stopped.
+    # A non-zero value tells the worker to continue rather than start fresh.
+    resume_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     user = relationship("User", back_populates="tasks")
     project_context = relationship("ProjectContext", back_populates="tasks")

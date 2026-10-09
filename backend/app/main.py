@@ -61,6 +61,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory = session_factory
         app.state.services = build_registry(session_factory, redis, app_settings)
         await app.state.services.event_service.start()
+        interrupted = await app.state.services.task_service.recover_interrupted_tasks()
+        if interrupted:
+            structlog.get_logger(__name__).warning(
+                "tasks.recovered_interrupted", count=interrupted
+            )
         configure_runtime_telemetry(app_settings, engine.sync_engine)
         _pool_task = asyncio.create_task(_pool_metrics())
 

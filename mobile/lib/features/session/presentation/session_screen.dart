@@ -85,6 +85,7 @@ class SessionScreen extends ConsumerWidget {
                     onApprove: notifier.approve,
                     onReject: (id, {note}) => notifier.reject(id, note: note),
                     onShowLogs: () => _showLogs(context, session, notifier),
+                    onResume: notifier.resumeTask,
                     onPrepareCommit: () => ref
                         .read(gitOpsRepositoryProvider)
                         .prepareCommit(taskId: taskId),
@@ -240,6 +241,7 @@ class _ExecutionView extends StatefulWidget {
     required this.onApprove,
     required this.onReject,
     required this.onShowLogs,
+    required this.onResume,
     required this.onPrepareCommit,
     required this.onConfirmCommit,
     required this.onDiscardCommit,
@@ -251,6 +253,7 @@ class _ExecutionView extends StatefulWidget {
   final Future<void> Function(String approvalId) onApprove;
   final Future<void> Function(String approvalId, {String? note}) onReject;
   final VoidCallback onShowLogs;
+  final Future<void> Function() onResume;
   final Future<GitOperation> Function() onPrepareCommit;
   final Future<GitOperation> Function(
     String gitOperationId,
@@ -266,6 +269,7 @@ class _ExecutionView extends StatefulWidget {
 
 class _ExecutionViewState extends State<_ExecutionView> {
   bool _preparingCommit = false;
+  bool _resuming = false;
   bool _showAllSteps = false;
 
   static const int _visibleSteps = 6;
@@ -316,6 +320,20 @@ class _ExecutionViewState extends State<_ExecutionView> {
     );
   }
 
+  Future<void> _resume() async {
+    setState(() => _resuming = true);
+    try {
+      await widget.onResume();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't resume the task")),
+      );
+    } finally {
+      if (mounted) setState(() => _resuming = false);
+    }
+  }
+
   Future<void> _startFollowUpTask() async {
     final newTaskId = await showStitchSheet<String>(
       context,
@@ -344,6 +362,9 @@ class _ExecutionViewState extends State<_ExecutionView> {
       }
     }
     final complete = task.status.isTerminal;
+    final stoppedMessage = task.currentPhase == 'interrupted'
+        ? 'Phodex stopped mid-task. Its changes are still in your repo.'
+        : 'This task stopped before it finished.';
 
     // The worker's phase ("booting worker", "analyzing context") adds detail
     // beyond the status chip — but only while live, and only when it says
@@ -397,6 +418,17 @@ class _ExecutionViewState extends State<_ExecutionView> {
             tone: StatusTone.warning,
             busy: true,
             message: 'Reconnecting to live updates…',
+          ),
+        ],
+        if (task.status == TaskStatus.failed ||
+            task.status == TaskStatus.cancelled) ...[
+          const SizedBox(height: AppSpacing.s12),
+          StatusBanner(
+            tone: StatusTone.warning,
+            busy: _resuming,
+            message: stoppedMessage,
+            actionLabel: _resuming ? null : 'Resume',
+            onAction: _resuming ? null : _resume,
           ),
         ],
         const SizedBox(height: AppSpacing.s16),

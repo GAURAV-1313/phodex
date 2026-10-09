@@ -16,6 +16,12 @@ class NetworkTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<TaskSummary> resumeTask(String taskId) async {
+    final json = await _apiClient.postJson('/tasks/$taskId/resume');
+    return TaskOutDto.fromJson(json).toDomain();
+  }
+
+  @override
   Future<TaskSummary> createTask({
     required String prompt,
     String? projectContextId,
