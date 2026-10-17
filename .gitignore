@@ -3,8 +3,7 @@
 *.jpeg
 *.jpg
 *.png
-.claude/*
-!.claude/skills/
+.claude/
 .opencode/
 .env*
 !.env*.example
